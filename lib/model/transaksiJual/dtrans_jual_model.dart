@@ -1,6 +1,6 @@
 class DTransJual {
   String idProduk;
-  int jumlahBarang;
+  double jumlahBarang;
   int hargaSatuan;
   int subtotal;
   String satuan;
@@ -25,11 +25,17 @@ class DTransJual {
 
   factory DTransJual.fromJson(Map<String, dynamic> json) {
     return DTransJual(
-      idProduk: json["id_produk"] ?? "",
-      jumlahBarang: json["jumlah_barang"] ?? 0,
-      hargaSatuan: json["harga_satuan"] ?? 0,
-      subtotal: json["subtotal"] ?? 0,
-      satuan: json["satuan"] ?? "",
+      idProduk: json["id_produk"],
+      jumlahBarang: json["jumlah_barang"] is String
+          ? double.parse(json["jumlah_barang"])
+          : json["jumlah_barang"].toDouble(),
+      hargaSatuan: json["harga_satuan"] is String
+          ? double.parse(json["harga_satuan"])
+          : json["harga_satuan"].toDouble(),
+      subtotal: json["subtotal"] is String
+          ? double.parse(json["subtotal"])
+          : json["subtotal"].toDouble(),
+      satuan: json["satuan"],
     );
   }
 }

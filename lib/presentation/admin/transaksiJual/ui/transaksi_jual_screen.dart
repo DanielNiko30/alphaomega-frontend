@@ -110,6 +110,7 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                     unit: 'pcs',
                                                     price: 0.0,
                                                     stok: product['stok'] ?? 0,
+                                                    rowId: '',
                                                   ));
                                             },
                                             child: Column(
@@ -192,7 +193,7 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                           .formErrors?['user'],
                                                     ),
                                                     isExpanded: true,
-                                                    items: state.userList
+                                                    items: state.penjualList
                                                         .map((user) {
                                                       return DropdownMenuItem<
                                                           String>(
@@ -232,7 +233,8 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                               'penjual'],
                                                     ),
                                                     isExpanded: true,
-                                                    items: state.userList
+                                                    items: state
+                                                        .pegawaiGudangList
                                                         .map((user) {
                                                       return DropdownMenuItem<
                                                           String>(
@@ -481,7 +483,6 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                 height: 8),
                                                             Row(
                                                               children: [
-                                                                // 🔽 Dropdown satuan yang diperindah
                                                                 Container(
                                                                   width: 90,
                                                                   height: 38,
@@ -505,8 +506,10 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                       DropdownButtonHideUnderline(
                                                                     child: DropdownButton<
                                                                         String>(
-                                                                      value: item[
-                                                                          'unit'],
+                                                                      value: (item['unit'] != null &&
+                                                                              (item['unitListDetail'] as List).any((s) => s['satuan'] == item['unit']))
+                                                                          ? item['unit'] // kalau unit ada dan valid
+                                                                          : null, // kalau tidak, biarkan null supaya pakai hint
                                                                       hint:
                                                                           const Text(
                                                                         "Satuan",
@@ -531,12 +534,18 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                           Icons
                                                                               .arrow_drop_down),
                                                                       items: (item['unitListDetail'] != null &&
-                                                                              item['unitListDetail']
-                                                                                  is List)
+                                                                              item['unitListDetail'] is List)
                                                                           ? List<Map<String, dynamic>>.from(item['unitListDetail'])
-                                                                              .map((satuanData) {
-                                                                              final satuan = satuanData['satuan'];
-                                                                              final stok = satuanData['stock'] ?? 0;
+                                                                              .map((satuanData) => satuanData['satuan'])
+                                                                              .toSet() // hapus duplikat satuan
+                                                                              .map((satuan) {
+                                                                              final stok = (item['unitListDetail'] as List).firstWhere(
+                                                                                    (s) => s['satuan'] == satuan,
+                                                                                    orElse: () => {
+                                                                                      'stock': 0
+                                                                                    },
+                                                                                  )['stock'] ??
+                                                                                  0;
                                                                               final isHabis = stok == 0;
 
                                                                               return DropdownMenuItem<String>(
@@ -573,7 +582,7 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                           if (stok >
                                                                               0) {
                                                                             context.read<TransJualBloc>().add(UpdateProductUnit(
-                                                                                  item['id'],
+                                                                                  item['rowId'],
                                                                                   selectedUnit,
                                                                                 ));
                                                                           }
@@ -587,22 +596,30 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                     width: 8),
 
                                                                 // ➖ Tombol kurang
+                                                                // ➖ Tombol kurang
                                                                 InkWell(
                                                                   onTap: () {
-                                                                    if (item[
-                                                                            'quantity'] >
+                                                                    double
+                                                                        currentQty =
+                                                                        (item['quantity']
+                                                                                as num)
+                                                                            .toDouble();
+                                                                    if (currentQty >
                                                                         1) {
-                                                                      context.read<TransJualBloc>().add(UpdateProductQuantity(
-                                                                          item[
-                                                                              'id'],
-                                                                          item['quantity'] -
-                                                                              1));
+                                                                      // minimal 1
+                                                                      context
+                                                                          .read<
+                                                                              TransJualBloc>()
+                                                                          .add(
+                                                                            UpdateProductQuantity(item['rowId'],
+                                                                                currentQty - 1),
+                                                                          );
                                                                     } else {
                                                                       context
                                                                           .read<
                                                                               TransJualBloc>()
                                                                           .add(RemoveProduct(
-                                                                              item['id']));
+                                                                              item['rowId']));
                                                                     }
                                                                   },
                                                                   child:
@@ -613,7 +630,7 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                             6),
                                                                     decoration:
                                                                         BoxDecoration(
-                                                                      color: Color(
+                                                                      color: const Color(
                                                                           0xFFD7C2F5),
                                                                       borderRadius:
                                                                           BorderRadius.circular(
@@ -632,14 +649,15 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                 const SizedBox(
                                                                     width: 6),
 
-                                                                // 🔢 Jumlah
+// 🔢 Jumlah Editable
                                                                 Container(
+                                                                  width: 60,
                                                                   padding: const EdgeInsets
                                                                       .symmetric(
                                                                       horizontal:
-                                                                          12,
+                                                                          8,
                                                                       vertical:
-                                                                          6),
+                                                                          4),
                                                                   decoration:
                                                                       BoxDecoration(
                                                                     color: Colors
@@ -652,27 +670,77 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                         BorderRadius
                                                                             .circular(6),
                                                                   ),
-                                                                  child: Text(
-                                                                    item['quantity']
-                                                                        .toString(),
+                                                                  child:
+                                                                      TextField(
+                                                                    controller:
+                                                                        TextEditingController(
+                                                                      text: item[
+                                                                              'quantity']
+                                                                          .toString(),
+                                                                    ),
+                                                                    keyboardType: const TextInputType
+                                                                        .numberWithOptions(
+                                                                        decimal:
+                                                                            true),
+                                                                    textAlign:
+                                                                        TextAlign
+                                                                            .center,
                                                                     style: const TextStyle(
                                                                         fontSize:
                                                                             14),
+                                                                    decoration:
+                                                                        const InputDecoration(
+                                                                      border: InputBorder
+                                                                          .none,
+                                                                      isDense:
+                                                                          true,
+                                                                      contentPadding:
+                                                                          EdgeInsets
+                                                                              .zero,
+                                                                    ),
+                                                                    onSubmitted:
+                                                                        (value) {
+                                                                      // ubah koma menjadi titik
+                                                                      String
+                                                                          normalized =
+                                                                          value.replaceAll(
+                                                                              ',',
+                                                                              '.');
+                                                                      double?
+                                                                          qty =
+                                                                          double.tryParse(
+                                                                              normalized);
+                                                                      if (qty !=
+                                                                              null &&
+                                                                          qty >
+                                                                              0) {
+                                                                        context
+                                                                            .read<TransJualBloc>()
+                                                                            .add(
+                                                                              UpdateProductQuantity(item['rowId'], qty),
+                                                                            );
+                                                                      }
+                                                                    },
                                                                   ),
                                                                 ),
 
                                                                 const SizedBox(
                                                                     width: 6),
 
-                                                                // ➕ Tombol tambah
+// ➕ Tombol tambah
                                                                 InkWell(
                                                                   onTap: item['quantity'] <
                                                                           item[
                                                                               'stok']
                                                                       ? () {
-                                                                          context.read<TransJualBloc>().add(UpdateProductQuantity(
-                                                                              item['id'],
-                                                                              item['quantity'] + 1));
+                                                                          double
+                                                                              currentQty =
+                                                                              (item['quantity'] as num).toDouble();
+                                                                          context
+                                                                              .read<TransJualBloc>()
+                                                                              .add(
+                                                                                UpdateProductQuantity(item['rowId'], currentQty + 1),
+                                                                              );
                                                                         }
                                                                       : null,
                                                                   child:
@@ -740,7 +808,8 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                               .read<
                                                                   TransJualBloc>()
                                                               .add(RemoveProduct(
-                                                                  item['id']));
+                                                                  item[
+                                                                      'rowId']));
                                                         },
                                                       ),
                                                     ],

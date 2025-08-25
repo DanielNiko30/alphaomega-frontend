@@ -45,12 +45,14 @@ class HTransJual {
   /// Method fromJson untuk ambil data dari backend
   factory HTransJual.fromJson(Map<String, dynamic> json) {
     return HTransJual(
-      idHTransJual: json["id_htrans_jual"], // <-- tambahkan ini
+      idHTransJual: json["id_htrans_jual"],
       idUser: json["id_user"],
       idUserPenjual: json["id_user_penjual"],
       namaPembeli: json["nama_pembeli"],
       tanggal: json["tanggal"],
-      totalHarga: json["total_harga"],
+      totalHarga: json["total_harga"] is String
+          ? int.parse(json["total_harga"])
+          : json["total_harga"],
       metodePembayaran: json["metode_pembayaran"],
       nomorInvoice: json["nomor_invoice"],
       status: json["status"],

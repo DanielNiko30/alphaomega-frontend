@@ -18,15 +18,17 @@ class SelectSupplier extends TransJualEvent {
 
 // Tambah & Hapus Produk dari Transaksi
 class AddProduct extends TransJualEvent {
-  final String id;
+  final String rowId; // id unik untuk baris ini
+  final String id; // id produk asli dari database
   final String name;
   final String image;
-  final int quantity;
+  final double quantity;
   final String unit;
   final double price;
   final int stok;
 
   AddProduct({
+    required this.rowId,
     required this.id,
     required this.name,
     required this.image,
@@ -37,34 +39,35 @@ class AddProduct extends TransJualEvent {
   });
 
   @override
-  List<Object?> get props => [id, name, image, quantity, unit, price, stok];
+  List<Object?> get props =>
+      [rowId, id, name, image, quantity, unit, price, stok];
 }
 
 class RemoveProduct extends TransJualEvent {
-  final String id;
-  RemoveProduct(this.id);
+  final String rowId;
+  RemoveProduct(this.rowId);
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => [rowId];
 }
 
 // Update jumlah atau harga produk
 class UpdateProductQuantity extends TransJualEvent {
-  final String id;
-  final int quantity;
-  UpdateProductQuantity(this.id, this.quantity);
+  final String rowId;
+  final double quantity;
+  UpdateProductQuantity(this.rowId, this.quantity);
 
   @override
-  List<Object?> get props => [id, quantity];
+  List<Object?> get props => [rowId, quantity];
 }
 
 class UpdateProductPrice extends TransJualEvent {
-  final String id;
+  final String rowId;
   final double price;
-  UpdateProductPrice(this.id, this.price);
+  UpdateProductPrice(this.rowId, this.price);
 
   @override
-  List<Object?> get props => [id, price];
+  List<Object?> get props => [rowId, price];
 }
 
 // Pilih metode pembayaran
@@ -90,12 +93,12 @@ class FetchSatuanByProductId extends TransJualEvent {
 
 // Update satuan produk yang dipilih
 class UpdateProductUnit extends TransJualEvent {
-  final String productId;
+  final String rowId;
   final String unit;
-  UpdateProductUnit(this.productId, this.unit);
+  UpdateProductUnit(this.rowId, this.unit);
 
   @override
-  List<Object?> get props => [productId, unit];
+  List<Object?> get props => [rowId, unit];
 }
 
 class SearchProductByNameJual extends TransJualEvent {
@@ -132,3 +135,7 @@ class UpdateNamaPembeli extends TransJualEvent {
 class TogglePrintPreview extends TransJualEvent {}
 
 class CetakNota extends TransJualEvent {}
+
+class FetchPenjual extends TransJualEvent {}
+
+class FetchPegawaiGudang extends TransJualEvent {}

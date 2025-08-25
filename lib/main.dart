@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/presentation/admin/editTransaksiJual/bloc/edit_transaksi_jual_bloc.dart';
 import 'package:frontend/presentation/admin/editTransaksiJual/bloc/edit_transaksi_jual_event.dart';
@@ -32,8 +33,11 @@ import 'controller/admin/product_controller.dart';
 import 'presentation/admin/transaksiJualPending/bloc/transaksi_jual_pending_bloc.dart';
 import 'presentation/admin/transaksiJualPending/bloc/transaksi_jual_pending_event.dart';
 import 'presentation/admin/transaksiJualPending/ui/transaksi_jual_pending_screen.dart';
+import 'presentation/login/choose_role_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await GetStorage.init();
   runApp(
     MultiBlocProvider(
       providers: [
@@ -68,6 +72,7 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/login': (context) => const LoginScreen(),
+        '/chooseRole': (context) => const ChooseRoleScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/masterUser': (context) => const MasterUserScreen(),
         '/masterBarang': (context) => BlocProvider(

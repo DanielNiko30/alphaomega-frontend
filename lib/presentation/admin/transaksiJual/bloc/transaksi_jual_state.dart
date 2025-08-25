@@ -25,6 +25,8 @@ class TransJualLoaded extends TransJualState {
   final bool isSubmitting;
   final String? selectedUserId;
   final List<Map<String, dynamic>> userList;
+  final List<Map<String, dynamic>> penjualList;
+  final List<Map<String, dynamic>> pegawaiGudangList;
   final String? invoiceNumber;
   final String? namaPembeli;
   final String? idUserPenjual;
@@ -40,6 +42,8 @@ class TransJualLoaded extends TransJualState {
     this.isSubmitting = false,
     this.selectedUserId,
     this.userList = const [],
+    this.penjualList = const [],
+    this.pegawaiGudangList = const [],
     this.invoiceNumber,
     this.namaPembeli,
     this.idUserPenjual,
@@ -56,6 +60,8 @@ class TransJualLoaded extends TransJualState {
     bool? isSubmitting,
     String? selectedUserId,
     List<Map<String, dynamic>>? userList,
+    List<Map<String, dynamic>>? penjualList,
+    List<Map<String, dynamic>>? pegawaiGudangList,
     String? invoiceNumber,
     String? namaPembeli,
     String? idUserPenjual,
@@ -71,6 +77,8 @@ class TransJualLoaded extends TransJualState {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       selectedUserId: selectedUserId ?? this.selectedUserId,
       userList: userList ?? this.userList,
+      penjualList: penjualList ?? this.penjualList,
+      pegawaiGudangList: pegawaiGudangList ?? this.pegawaiGudangList,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       namaPembeli: namaPembeli ?? this.namaPembeli,
       idUserPenjual: idUserPenjual ?? this.idUserPenjual,
@@ -90,6 +98,8 @@ class TransJualLoaded extends TransJualState {
         isSubmitting,
         selectedUserId,
         userList,
+        penjualList,
+        pegawaiGudangList,
         invoiceNumber,
         namaPembeli,
         idUserPenjual,

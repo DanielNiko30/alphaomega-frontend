@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:uuid/uuid.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/controller/user/user_controller.dart';
 import 'package:frontend/model/transaksiBeli/dtrans_beli_model.dart';
@@ -32,6 +32,8 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
     on<UpdateNamaPembeli>(_onUpdateNamaPembeli);
     on<CetakNota>(_onCetakNotaDanPrint);
     on<TogglePrintPreview>(_onTogglePrintPreview);
+    on<FetchPenjual>(_onFetchPenjual);
+    on<FetchPegawaiGudang>(_onFetchPegawaiGudang);
   }
 
   void _onSubmitTransaction(
@@ -70,18 +72,21 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
         // ✅ Hitung total harga
         final totalHarga = currentState.selectedProducts.fold<int>(
           0,
-          (sum, item) =>
-              sum +
-              ((item['quantity'] as int) * (item['price'] as num).toInt()),
+          (sum, item) {
+            final quantity = (item['quantity'] as num).toDouble();
+            final price = (item['price'] as num);
+            return sum + (quantity * price).toInt(); // tetap int
+          },
         );
 
-        // ✅ Buat detail transaksi
         final detailTransaksi = currentState.selectedProducts.map((item) {
+          final quantity = (item['quantity'] as num).toDouble();
+          final price = (item['price'] as int);
           return DTransJual(
             idProduk: item['id'],
-            jumlahBarang: item['quantity'],
-            hargaSatuan: item['price'],
-            subtotal: (item['quantity'] * item['price']).toInt(),
+            jumlahBarang: quantity,
+            hargaSatuan: price,
+            subtotal: (quantity * price).toInt(), // bulatkan subtotal
             satuan: item['unit'],
           );
         }).toList();
@@ -146,27 +151,35 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
       final updatedProducts =
           List<Map<String, dynamic>>.from(currentState.selectedProducts);
 
-      final existingIndex =
-          updatedProducts.indexWhere((p) => p['id'] == event.id);
-      if (existingIndex == -1) {
-        updatedProducts.add({
-          'id': event.id,
-          'name': event.name,
-          'image': event.image,
-          'quantity': event.quantity,
-          'unit': event.unit,
-          'price': event.price,
-          'unitList': [],
-          'unitListDetail': [],
-          'stok': event.stok,
-        });
-
-        emit(currentState.copyWith(selectedProducts: updatedProducts));
-        add(FetchSatuanByProductId(event.id));
-      } else {
-        updatedProducts[existingIndex]['quantity'] += event.quantity;
-        emit(currentState.copyWith(selectedProducts: updatedProducts));
+      // Cek apakah sudah pernah ada produk ini sebelumnya
+      String finalUnit = event.unit;
+      final existing =
+          updatedProducts.where((p) => p['id'] == event.id).toList();
+      if (existing.isNotEmpty) {
+        // Kalau ada, pakai unit terakhir yang dipilih
+        finalUnit = existing.last['unit'] ?? event.unit;
       }
+
+      // Unique row id untuk membedakan baris
+      final rowId = const Uuid().v4();
+
+      updatedProducts.add({
+        'rowId': rowId, // ID unik tiap baris
+        'id': event.id, // ID produk asli
+        'name': event.name,
+        'image': event.image,
+        'quantity': event.quantity,
+        'unit': finalUnit, // Gunakan unit terakhir
+        'price': event.price,
+        'unitList': [],
+        'unitListDetail': [],
+        'stok': event.stok,
+      });
+
+      emit(currentState.copyWith(selectedProducts: updatedProducts));
+
+      // Ambil daftar satuan untuk row yang baru ditambahkan
+      add(FetchSatuanByProductId(event.id));
     }
   }
 
@@ -175,7 +188,7 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
       final currentState = state as TransJualLoaded;
       final updatedProducts =
           List<Map<String, dynamic>>.from(currentState.selectedProducts)
-            ..removeWhere((p) => p['id'] == event.id);
+            ..removeWhere((p) => p['rowId'] == event.rowId);
 
       emit(currentState.copyWith(selectedProducts: updatedProducts));
     }
@@ -186,7 +199,8 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
     if (state is TransJualLoaded) {
       final currentState = state as TransJualLoaded;
       final updatedProducts = currentState.selectedProducts.map((p) {
-        if (p['id'] == event.id) return {...p, 'quantity': event.quantity};
+        if (p['rowId'] == event.rowId)
+          return {...p, 'quantity': event.quantity};
         return p;
       }).toList();
 
@@ -199,7 +213,7 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
     if (state is TransJualLoaded) {
       final currentState = state as TransJualLoaded;
       final updatedProducts = currentState.selectedProducts.map((p) {
-        if (p['id'] == event.id) return {...p, 'price': event.price};
+        if (p['rowId'] == event.rowId) return {...p, 'price': event.price};
         return p;
       }).toList();
 
@@ -225,6 +239,11 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
 
         final updatedProducts = currentState.selectedProducts.map((p) {
           if (p['id'] == event.productId) {
+            final existingUnit = p['unit']; // simpan unit lama
+            final existingPrice = p['price'];
+            final existingStock = p['stok'];
+
+            // kalau existingUnit null, berarti produk baru → pakai default
             return {
               ...p,
               'unitList': satuanList.map((s) => s.satuan).toList(),
@@ -232,12 +251,15 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
                   .map((s) => {
                         'satuan': s.satuan,
                         'harga': s.harga,
-                        'stock': s.jumlah, // Tambahkan stock
+                        'stock': s.jumlah,
                       })
                   .toList(),
-              'unit': satuanList.first.satuan,
-              'price': satuanList.first.harga,
-              'stok': satuanList.first.jumlah, // Tambahkan stok langsung
+              'unit': existingUnit ?? satuanList.first.satuan,
+              'price':
+                  existingUnit != null ? existingPrice : satuanList.first.harga,
+              'stok': existingUnit != null
+                  ? existingStock
+                  : satuanList.first.jumlah,
             };
           }
           return p;
@@ -256,7 +278,7 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
       final currentState = state as TransJualLoaded;
 
       final updatedProducts = currentState.selectedProducts.map((p) {
-        if (p['id'] == event.productId) {
+        if (p['rowId'] == event.rowId) {
           final List unitListDetail = p['unitListDetail'] ?? [];
 
           final satuanDetail = unitListDetail.firstWhere(
@@ -314,18 +336,89 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
     }
   }
 
-  void _onFetchLatestInvoice(
-      FetchLatestInvoice event, Emitter<TransJualState> emit) async {
+  void _onFetchPenjual(FetchPenjual event, Emitter<TransJualState> emit) async {
     if (state is TransJualLoaded) {
       final currentState = state as TransJualLoaded;
-
       try {
-        final invoice = await TransaksiJualController.getLatestInvoiceNumber();
+        final userController = UserController();
+        final penjuals = await userController.fetchPenjual();
 
-        emit(currentState.copyWith(invoiceNumber: invoice));
+        print("DEBUG FetchPenjual - total data: ${penjuals.length}");
+        for (var u in penjuals) {
+          print(
+              "DEBUG Penjual: id=${u.idUser}, name=${u.name}, role=${u.role}");
+        }
+
+        final userList = penjuals
+            .map((u) => {
+                  'id': u.idUser,
+                  'name': u.name,
+                })
+            .toList();
+
+        print("DEBUG UserList hasil mapping: $userList");
+
+        emit(currentState.copyWith(penjualList: userList));
       } catch (e) {
-        emit(TransJualError("Gagal mengambil nomor invoice: $e"));
+        print("ERROR FetchPenjual: $e");
+        emit(TransJualError("Gagal mengambil data penjual: $e"));
       }
+    }
+  }
+
+  void _onFetchPegawaiGudang(
+      FetchPegawaiGudang event, Emitter<TransJualState> emit) async {
+    if (state is TransJualLoaded) {
+      final currentState = state as TransJualLoaded;
+      try {
+        final userController = UserController();
+        final pegawaiGudang = await userController.fetchPegawaiGudang();
+
+        print("DEBUG FetchPegawaiGudang - total data: ${pegawaiGudang.length}");
+        for (var u in pegawaiGudang) {
+          print(
+              "DEBUG PegawaiGudang: id=${u.idUser}, name=${u.name}, role=${u.role}");
+        }
+
+        final userList = pegawaiGudang
+            .map((u) => {
+                  'id': u.idUser,
+                  'name': u.name,
+                })
+            .toList();
+
+        print("DEBUG UserList hasil mapping: $userList");
+
+        emit(currentState.copyWith(pegawaiGudangList: userList));
+      } catch (e) {
+        print("ERROR FetchPegawaiGudang: $e");
+        emit(TransJualError("Gagal mengambil data pegawai gudang: $e"));
+      }
+    }
+  }
+
+  void _onFetchLatestInvoice(
+    FetchLatestInvoice event,
+    Emitter<TransJualState> emit,
+  ) async {
+    try {
+      final invoice = await TransaksiJualController.getLatestInvoiceNumber();
+
+      if (state is TransJualLoaded) {
+        final currentState = state as TransJualLoaded;
+        emit(currentState.copyWith(invoiceNumber: invoice));
+      } else {
+        // Kalau state belum TransJualLoaded, inisialisasi dulu
+        emit(TransJualLoaded(
+          products: [],
+          selectedProducts: [],
+          invoiceNumber: invoice,
+          paymentMethod: null,
+          namaPembeli: '',
+        ));
+      }
+    } catch (e) {
+      emit(TransJualError("Gagal mengambil nomor invoice: $e"));
     }
   }
 
@@ -352,6 +445,24 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
               })
           .toList();
 
+      // Ambil penjual
+      final penjuals = await UserController().fetchPenjual();
+      final penjualList = penjuals
+          .map((u) => {
+                'id': u.idUser,
+                'name': u.name,
+              })
+          .toList();
+
+      // Ambil pegawai gudang
+      final pegawaiGudang = await UserController().fetchPegawaiGudang();
+      final pegawaiGudangList = pegawaiGudang
+          .map((u) => {
+                'id': u.idUser,
+                'name': u.name,
+              })
+          .toList();
+
       // Ambil invoice terbaru
       final invoice = await TransaksiJualController.getLatestInvoiceNumber();
 
@@ -360,6 +471,8 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
         products: productList,
         allProducts: productList,
         userList: userList,
+        penjualList: penjualList,
+        pegawaiGudangList: pegawaiGudangList,
         invoiceNumber: invoice,
       ));
     } catch (e) {
