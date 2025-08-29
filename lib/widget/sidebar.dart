@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get_storage/get_storage.dart';
 
 class Sidebar extends StatefulWidget {
   const Sidebar({super.key});
@@ -9,6 +10,12 @@ class Sidebar extends StatefulWidget {
 
 class _SidebarState extends State<Sidebar> {
   bool isCollapsed = true;
+  final box = GetStorage();
+
+  Future<void> logout() async {
+    await box.remove('token');
+    await box.remove('user');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +42,8 @@ class _SidebarState extends State<Sidebar> {
                 ),
               ),
             ),
+
+            // 🔹 Bagian Menu
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -42,8 +51,6 @@ class _SidebarState extends State<Sidebar> {
                   _buildListTile(Icons.dashboard, 'Dashboard', () {
                     Navigator.pushNamed(context, '/dashboard');
                   }),
-
-                  // Master Data Section
                   if (!isCollapsed)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -51,29 +58,24 @@ class _SidebarState extends State<Sidebar> {
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
-
                   _buildListTile(Icons.person, 'Master User', () {
                     Navigator.pushNamed(context, '/masterUser');
                   }),
-
-                  // Expandable Master Produk
                   ExpansionTile(
-                    leading: Icon(Icons.inventory),
+                    leading: const Icon(Icons.inventory),
                     title: isCollapsed
                         ? const SizedBox.shrink()
                         : const Text('Master Produk'),
                     children: [
                       ListTile(
-                        leading: const Icon(
-                            Icons.list_alt), // tetap tampil walau isCollapsed
+                        leading: const Icon(Icons.list_alt),
                         title: isCollapsed ? null : const Text('Daftar Produk'),
                         onTap: () {
                           Navigator.pushNamed(context, '/masterBarang');
                         },
                       ),
                       ListTile(
-                        leading: const Icon(
-                            Icons.category), // tetap tampil walau isCollapsed
+                        leading: const Icon(Icons.category),
                         title:
                             isCollapsed ? null : const Text('Kategori Produk'),
                         onTap: () {
@@ -82,13 +84,9 @@ class _SidebarState extends State<Sidebar> {
                       ),
                     ],
                   ),
-
                   _buildListTile(Icons.local_shipping, 'Master Supplier', () {
                     Navigator.pushNamed(context, '/masterSupplier');
                   }),
-
-                  // Transaksi Section
-                  // Transaksi Section
                   if (!isCollapsed)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -96,7 +94,6 @@ class _SidebarState extends State<Sidebar> {
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
-
                   _buildListTile(Icons.shopping_cart, 'Transaksi Pembelian',
                       () {
                     Navigator.pushNamed(context, '/transaksiPembelian');
@@ -110,8 +107,6 @@ class _SidebarState extends State<Sidebar> {
                   _buildListTile(Icons.shopping_bag, 'Pesanan Online', () {
                     Navigator.pushNamed(context, '/pesananOnline');
                   }),
-
-                  // Laporan Section
                   if (!isCollapsed)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -119,7 +114,6 @@ class _SidebarState extends State<Sidebar> {
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
-
                   _buildListTile(Icons.receipt_long, 'Laporan Pembelian', () {
                     Navigator.pushNamed(context, '/laporanPembelian');
                   }),
@@ -130,6 +124,18 @@ class _SidebarState extends State<Sidebar> {
                     Navigator.pushNamed(context, '/laporanStok');
                   }),
                 ],
+              ),
+            ),
+
+            // 🔹 Tombol Logout di bawah
+            SafeArea(
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: isCollapsed ? null : const Text("Logout"),
+                onTap: () async {
+                  await logout();
+                  Navigator.pushReplacementNamed(context, "/login");
+                },
               ),
             ),
           ],

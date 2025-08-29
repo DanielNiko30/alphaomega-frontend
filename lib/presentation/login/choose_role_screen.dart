@@ -31,8 +31,8 @@ class ChooseRoleScreen extends StatelessWidget {
       // ✅ Arahkan ke halaman sesuai role
       if (role == "penjual") {
         Navigator.pushReplacementNamed(context, '/transaksiPenjualan');
-      } else if (role == "pegawai_gudang") {
-        Navigator.pushReplacementNamed(context, '/gudang');
+      } else if (role == "pegawai gudang") {
+        Navigator.pushReplacementNamed(context, '/listPesanan');
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -45,37 +45,94 @@ class ChooseRoleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 🔹 Card Penjual
-              _roleCard(
-                context,
-                title: "Penjual",
-                icon: Icons.store,
-                bgColor: Colors.white,
-                borderColor: Colors.blue.shade800,
-                textColor: Colors.blue.shade800,
-                onTap: () => _setRole(context, "penjual"),
-              ),
-              const SizedBox(width: 80),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          double screenWidth = constraints.maxWidth;
 
-              // 🔹 Card Gudang
-              _roleCard(
-                context,
-                title: "Gudang",
-                icon: Icons.warehouse,
-                bgColor: Colors.blue.shade800,
-                borderColor: Colors.white,
-                textColor: Colors.white,
-                onTap: () => _setRole(context, "pegawai_gudang"),
-              ),
-            ],
-          ),
-        ),
+          // 🔹 Tentukan layout responsif
+          bool isMobile = screenWidth < 600;
+          bool isTablet = screenWidth >= 600 && screenWidth < 1024;
+          bool isDesktop = screenWidth >= 1024;
+
+          double cardWidth;
+          double cardHeight;
+
+          if (isMobile) {
+            cardWidth = screenWidth * 0.7;
+            cardHeight = 200;
+          } else if (isTablet) {
+            cardWidth = 300;
+            cardHeight = 300;
+          } else {
+            cardWidth = 400;
+            cardHeight = 400;
+          }
+
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: isMobile
+                  // 🔹 HP → tampil vertikal
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _roleCard(
+                          context,
+                          title: "Penjual",
+                          icon: Icons.store,
+                          bgColor: Colors.white,
+                          borderColor: Colors.blue.shade800,
+                          textColor: Colors.blue.shade800,
+                          width: cardWidth,
+                          height: cardHeight,
+                          onTap: () => _setRole(context, "penjual"),
+                        ),
+                        const SizedBox(height: 40),
+                        _roleCard(
+                          context,
+                          title: "Gudang",
+                          icon: Icons.warehouse,
+                          bgColor: Colors.blue.shade800,
+                          borderColor: Colors.white,
+                          textColor: Colors.white,
+                          width: cardWidth,
+                          height: cardHeight,
+                          onTap: () => _setRole(context, "pegawai gudang"),
+                        ),
+                      ],
+                    )
+                  // 🔹 Tablet & PC → tampil horizontal
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _roleCard(
+                          context,
+                          title: "Penjual",
+                          icon: Icons.store,
+                          bgColor: Colors.white,
+                          borderColor: Colors.blue.shade800,
+                          textColor: Colors.blue.shade800,
+                          width: cardWidth,
+                          height: cardHeight,
+                          onTap: () => _setRole(context, "penjual"),
+                        ),
+                        const SizedBox(width: 80),
+                        _roleCard(
+                          context,
+                          title: "Gudang",
+                          icon: Icons.warehouse,
+                          bgColor: Colors.blue.shade800,
+                          borderColor: Colors.white,
+                          textColor: Colors.white,
+                          width: cardWidth,
+                          height: cardHeight,
+                          onTap: () => _setRole(context, "pegawai gudang"),
+                        ),
+                      ],
+                    ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -87,17 +144,19 @@ class ChooseRoleScreen extends StatelessWidget {
     required Color bgColor,
     required Color borderColor,
     required Color textColor,
+    required double width,
+    required double height,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: 500,
-        height: 500,
+        width: width,
+        height: height,
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderColor, width: 2),
           boxShadow: [
             BoxShadow(
@@ -110,12 +169,12 @@ class ChooseRoleScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 80, color: textColor),
+            Icon(icon, size: height * 0.3, color: textColor),
             const SizedBox(height: 10),
             Text(
               title,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: height * 0.12,
                 fontWeight: FontWeight.bold,
                 color: textColor,
               ),

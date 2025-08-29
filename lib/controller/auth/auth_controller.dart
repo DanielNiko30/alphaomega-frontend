@@ -4,7 +4,7 @@ import 'package:get_storage/get_storage.dart';
 
 class AuthController {
   final String baseUrl =
-      'http://localhost:3000/api/auth/login'; // ganti sesuai backend
+      'http://192.168.18.18:3000/api/auth/login'; // ganti sesuai backend
   final box = GetStorage();
 
   Future<Map<String, dynamic>?> login(String username, String password) async {

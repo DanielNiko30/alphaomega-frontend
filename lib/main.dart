@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/presentation/pegawaiGudang/detailPesanan/bloc/detail_pesanan_event.dart';
+import 'package:frontend/presentation/pegawaiGudang/detailPesanan/ui/detail_pesanan_screen.dart';
+import 'package:frontend/presentation/pegawaiGudang/listBarangPesanan/ui/list_barang_pesanan_screen.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/presentation/admin/editTransaksiJual/bloc/edit_transaksi_jual_bloc.dart';
@@ -34,6 +37,7 @@ import 'presentation/admin/transaksiJualPending/bloc/transaksi_jual_pending_bloc
 import 'presentation/admin/transaksiJualPending/bloc/transaksi_jual_pending_event.dart';
 import 'presentation/admin/transaksiJualPending/ui/transaksi_jual_pending_screen.dart';
 import 'presentation/login/choose_role_screen.dart';
+import 'presentation/pegawaiGudang/detailPesanan/bloc/detail_pesanan_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,6 +77,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/chooseRole': (context) => const ChooseRoleScreen(),
+        '/listPesanan': (context) => const ListBarangPesananScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/masterUser': (context) => const MasterUserScreen(),
         '/masterBarang': (context) => BlocProvider(
@@ -134,6 +139,28 @@ class MyApp extends StatelessWidget {
             create: (context) =>
                 TransJualEditBloc()..add(LoadTransactionForEdit(idTransaksi)),
             child: TransJualEditScreen(transactionId: idTransaksi),
+          );
+        },
+        '/detailPesanan': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map?;
+          final idPesanan = args?['idPesanan'] as String?;
+          final namaPembeli = args?['namaPembeli'] as String?;
+
+          if (idPesanan == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text("Detail Pesanan")),
+              body: const Center(
+                  child: Text("Error: ID Pesanan tidak ditemukan")),
+            );
+          }
+
+          return BlocProvider(
+            create: (context) =>
+                DetailPesananBloc()..add(LoadDetailPesanan(idPesanan)),
+            child: DetailPesananScreen(
+              idPesanan: idPesanan,
+              namaPembeli: namaPembeli ?? "",
+            ),
           );
         },
       },

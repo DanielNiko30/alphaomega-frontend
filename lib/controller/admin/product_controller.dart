@@ -12,7 +12,7 @@ import '../../model/product/add_product_model.dart';
 import '../../model/product/kategori_model.dart';
 
 class ProductController {
-  static const String baseUrl = "http://localhost:3000/api/product";
+  static const String baseUrl = "http://192.168.18.18:3000/api/product";
 
   // Ambil semua produk
   static Future<List<Product>> getAllProducts() async {

@@ -32,7 +32,21 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      // 🔹 Panggil backend lewat AuthController
+      // 🔹 Jika login sebagai admin (bypass backend)
+      if (u == "admin" && p == "admin") {
+        final box = GetStorage();
+        await box.write("id_user", "0"); // bisa pakai id fiktif
+        await box.write("role", "admin");
+        await box.write("token", "dummy-token-admin");
+
+        debugPrint("✅ Login sebagai ADMIN");
+
+        Navigator.pushReplacementNamed(context, '/dashboard');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // 🔹 Selain admin → cek ke backend
       final result = await _authController.login(u, p);
 
       if (result != null) {
@@ -48,17 +62,13 @@ class _LoginScreenState extends State<LoginScreen> {
         await box.write("id_user", idUser);
         await box.write("role", role);
         await box.write("token", token);
-        // Arahkan berdasarkan role
-        if (role == "admin") {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        } else {
-          // bawa id_user ke halaman chooseRole
-          Navigator.pushReplacementNamed(
-            context,
-            '/chooseRole',
-            arguments: {"id_user": idUser, "role": role, "token": token},
-          );
-        }
+
+        // 🔹 Arahkan ke chooseRole
+        Navigator.pushReplacementNamed(
+          context,
+          '/chooseRole',
+          arguments: {"id_user": idUser, "role": role, "token": token},
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login gagal. Cek username/password')),

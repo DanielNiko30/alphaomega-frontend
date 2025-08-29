@@ -69,7 +69,6 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
       emit(currentState.copyWith(isSubmitting: true, formErrors: null));
 
       try {
-        // ✅ Hitung total harga
         final totalHarga = currentState.selectedProducts.fold<int>(
           0,
           (sum, item) {
@@ -91,10 +90,8 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
           );
         }).toList();
 
-        // ✅ Ambil nomor invoice
         final invoice = await TransaksiJualController.getLatestInvoiceNumber();
 
-        // ✅ Buat objek transaksi
         final hTransJual = HTransJual(
           idUser: currentState.selectedUserId!,
           idUserPenjual: currentState.selectedUserPenjualId!,
@@ -151,25 +148,22 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
       final updatedProducts =
           List<Map<String, dynamic>>.from(currentState.selectedProducts);
 
-      // Cek apakah sudah pernah ada produk ini sebelumnya
       String finalUnit = event.unit;
       final existing =
           updatedProducts.where((p) => p['id'] == event.id).toList();
       if (existing.isNotEmpty) {
-        // Kalau ada, pakai unit terakhir yang dipilih
         finalUnit = existing.last['unit'] ?? event.unit;
       }
 
-      // Unique row id untuk membedakan baris
       final rowId = const Uuid().v4();
 
       updatedProducts.add({
-        'rowId': rowId, // ID unik tiap baris
-        'id': event.id, // ID produk asli
+        'rowId': rowId,
+        'id': event.id,
         'name': event.name,
         'image': event.image,
         'quantity': event.quantity,
-        'unit': finalUnit, // Gunakan unit terakhir
+        'unit': finalUnit, 
         'price': event.price,
         'unitList': [],
         'unitListDetail': [],
@@ -243,7 +237,6 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
             final existingPrice = p['price'];
             final existingStock = p['stok'];
 
-            // kalau existingUnit null, berarti produk baru → pakai default
             return {
               ...p,
               'unitList': satuanList.map((s) => s.satuan).toList(),
@@ -436,7 +429,6 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
               })
           .toList();
 
-      // Ambil user list
       final users = await UserController().fetchUsers();
       final userList = users
           .map((u) => {
@@ -445,7 +437,6 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
               })
           .toList();
 
-      // Ambil penjual
       final penjuals = await UserController().fetchPenjual();
       final penjualList = penjuals
           .map((u) => {
@@ -463,10 +454,8 @@ class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
               })
           .toList();
 
-      // Ambil invoice terbaru
       final invoice = await TransaksiJualController.getLatestInvoiceNumber();
 
-      // Emit state lengkap
       emit(TransJualLoaded(
         products: productList,
         allProducts: productList,
