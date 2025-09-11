@@ -12,7 +12,7 @@ import '../../model/product/add_product_model.dart';
 import '../../model/product/kategori_model.dart';
 
 class ProductController {
-  static const String baseUrl = "http://192.168.18.18:3000/api/product";
+  static const String baseUrl = "https://tokalphaomegaploso.my.id/api/product";
 
   // Ambil semua produk
   static Future<List<Product>> getAllProducts() async {
@@ -196,6 +196,17 @@ class ProductController {
       }
     } catch (e) {
       throw Exception("Terjadi kesalahan saat konversi stok: $e");
+    }
+  }
+
+  static Future<Product> getLatestProduct() async {
+    final response = await http.get(Uri.parse("$baseUrl/latest"));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return Product.fromJson(data);
+    } else {
+      throw Exception("Gagal mengambil produk terbaru");
     }
   }
 }

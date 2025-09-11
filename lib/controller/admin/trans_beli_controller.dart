@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../model/transaksiBeli/htrans_beli_model.dart';
 
 class TransaksiBeliController {
-  static const String baseUrl = "http://192.168.18.18:3000/api/transaksiBeli";
+  static const String baseUrl = "https://tokalphaomegaploso.my.id/api/transaksiBeli";
 
   // Ambil semua transaksi beli
   static Future<List<HTransBeli>> getAllTransactions() async {
