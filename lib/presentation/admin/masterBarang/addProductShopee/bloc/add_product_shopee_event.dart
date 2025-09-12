@@ -1,25 +1,25 @@
 import 'package:equatable/equatable.dart';
-import '../../../../../model/product/stok_model.dart';
+import '../../../../../model/product/product_shopee_model.dart';
+import '../../../../../model/product/shope_model.dart';
 
-/// Base class untuk semua event
 abstract class AddProductShopeeEvent extends Equatable {
   @override
   List<Object?> get props => [];
 }
 
-/// 🔹 Load satuan yang belum masuk Shopee
-class LoadSatuanShopee extends AddProductShopeeEvent {
+/// Load semua data untuk add product Shopee (stok, kategori, logistic)
+class LoadAddShopeeData extends AddProductShopeeEvent {
   final String productId;
 
-  LoadSatuanShopee(this.productId);
+  LoadAddShopeeData({required this.productId});
 
   @override
   List<Object?> get props => [productId];
 }
 
-/// 🔹 Pilih satuan produk
+/// Pilih satuan produk
 class SelectSatuanShopee extends AddProductShopeeEvent {
-  final Stok selectedSatuan;
+  final StokShopee selectedSatuan;
 
   SelectSatuanShopee({required this.selectedSatuan});
 
@@ -27,39 +27,50 @@ class SelectSatuanShopee extends AddProductShopeeEvent {
   List<Object?> get props => [selectedSatuan];
 }
 
-/// 🔹 Submit produk ke Shopee
+/// Pilih kategori Shopee
+class SelectCategoryShopee extends AddProductShopeeEvent {
+  final ShopeeCategory selectedCategory;
+
+  SelectCategoryShopee({required this.selectedCategory});
+
+  @override
+  List<Object?> get props => [selectedCategory];
+}
+
+/// Pilih logistic Shopee
+class SelectLogisticShopee extends AddProductShopeeEvent {
+  final ShopeeLogistic selectedLogistic;
+
+  SelectLogisticShopee({required this.selectedLogistic});
+
+  @override
+  List<Object?> get props => [selectedLogistic];
+}
+
+/// Submit produk ke Shopee
 class SubmitAddShopeeProduct extends AddProductShopeeEvent {
-  final String productId; // ID produk di database
-  final String itemSku; // SKU unik
-  final num weight; // Berat produk (gram)
-  final Map<String, dynamic> dimension; // Panjang, lebar, tinggi
-  final String condition; // Baru / Bekas
-  final int logisticId; // ID kurir Shopee
-  final int categoryId; // ID kategori Shopee
-  final String? brandName; // Nama brand opsional
-  final int? brandId; // ID brand opsional
+  final String itemSku;
+  final num weight;
+  final Map<String, dynamic> dimension;
+  final String condition;
+  final String? brandName;
+  final int? brandId;
 
   SubmitAddShopeeProduct({
-    required this.productId,
     required this.itemSku,
     required this.weight,
     required this.dimension,
     required this.condition,
-    required this.logisticId,
-    required this.categoryId,
     this.brandName,
     this.brandId,
   });
 
   @override
   List<Object?> get props => [
-        productId,
         itemSku,
         weight,
         dimension,
         condition,
-        logisticId,
-        categoryId,
         brandName,
         brandId,
       ];

@@ -1,49 +1,67 @@
 import 'package:equatable/equatable.dart';
-import '../../../../../model/product/stok_model.dart';
+import '../../../../../model/product/product_shopee_model.dart';
+import '../../../../../model/product/latest_product_model.dart';
+import '../../../../../model/product/shope_model.dart';
 
-/// Base class untuk semua state
 abstract class AddProductShopeeState extends Equatable {
   @override
   List<Object?> get props => [];
 }
 
-/// 🔹 State awal
 class AddProductShopeeInitial extends AddProductShopeeState {}
 
-/// 🔹 Sedang memuat data
 class AddProductShopeeLoading extends AddProductShopeeState {}
 
-/// 🔹 Data satuan berhasil dimuat
 class AddProductShopeeLoaded extends AddProductShopeeState {
-  final List<Stok> stokList; // Semua stok yang belum diupload ke Shopee
-  final Stok? selectedSatuan; // Satuan yang dipilih user
+  final LatestProduct product;
+  final List<StokShopee> stokList;
+  final StokShopee? selectedSatuan;
+  final List<ShopeeCategory> categories;
+  final ShopeeCategory? selectedCategory;
+  final List<ShopeeLogistic> logistics;
+  final ShopeeLogistic? selectedLogistic;
 
   AddProductShopeeLoaded({
+    required this.product,
     required this.stokList,
     this.selectedSatuan,
+    required this.categories,
+    this.selectedCategory,
+    required this.logistics,
+    this.selectedLogistic,
   });
 
   AddProductShopeeLoaded copyWith({
-    List<Stok>? stokList,
-    Stok? selectedSatuan,
+    List<StokShopee>? stokList,
+    StokShopee? selectedSatuan,
+    ShopeeCategory? selectedCategory,
+    ShopeeLogistic? selectedLogistic,
   }) {
     return AddProductShopeeLoaded(
+      product: product,
       stokList: stokList ?? this.stokList,
       selectedSatuan: selectedSatuan ?? this.selectedSatuan,
+      categories: categories,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
+      logistics: logistics,
+      selectedLogistic: selectedLogistic ?? this.selectedLogistic,
     );
   }
 
   @override
   List<Object?> get props => [
+        product,
         stokList,
-        selectedSatuan ?? '',
+        selectedSatuan?.satuan ?? '',
+        categories,
+        selectedCategory?.categoryName ?? '',
+        logistics,
+        selectedLogistic?.name ?? '',
       ];
 }
 
-/// 🔹 Sedang submit ke Shopee
 class AddProductShopeeSubmitting extends AddProductShopeeState {}
 
-/// 🔹 Submit berhasil
 class AddProductShopeeSuccess extends AddProductShopeeState {
   final String message;
 
@@ -53,7 +71,6 @@ class AddProductShopeeSuccess extends AddProductShopeeState {
   List<Object?> get props => [message];
 }
 
-/// 🔹 Submit gagal
 class AddProductShopeeFailure extends AddProductShopeeState {
   final String message;
 

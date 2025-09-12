@@ -3,7 +3,7 @@ import 'dart:convert';
 import '../product/stok_model.dart';
 
 class AddProduct {
-  final String idProduct;
+  final String? idProduct;
   final String productKategori;
   final String namaProduct;
   final dynamic? gambarProduct; // Base64 atau URL
@@ -12,7 +12,7 @@ class AddProduct {
   final List<Stok> stokList;
 
   AddProduct({
-    required this.idProduct,
+    this.idProduct,
     required this.productKategori,
     required this.namaProduct,
     this.gambarProduct,

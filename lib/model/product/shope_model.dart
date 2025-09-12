@@ -9,8 +9,9 @@ class ShopeeCategory {
 
   factory ShopeeCategory.fromJson(Map<String, dynamic> json) {
     return ShopeeCategory(
-      categoryId: json['category_id'],
-      categoryName: json['category_name'],
+      categoryId: json['category_id'] ?? 0,
+      categoryName:
+          json['display_category_name'] ?? 'Unknown', // default string
     );
   }
 }
@@ -19,18 +20,21 @@ class ShopeeLogistic {
   final int id;
   final String name;
   final bool enabled;
+  final int maskChannelId; // baru
 
   ShopeeLogistic({
     required this.id,
     required this.name,
     required this.enabled,
+    required this.maskChannelId,
   });
 
   factory ShopeeLogistic.fromJson(Map<String, dynamic> json) {
     return ShopeeLogistic(
-      id: json['id'],
-      name: json['name'],
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Unknown',
       enabled: json['enabled'] ?? true,
+      maskChannelId: json['mask_channel_id'] ?? 0,
     );
   }
 }

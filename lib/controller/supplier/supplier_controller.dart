@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../model/supplier/supllier_model.dart';
 
 class SupplierController {
-  static const String baseUrl = "http://192.168.18.18:3000/api/supplier";
+  static const String baseUrl = "https://tokalphaomegaploso.my.id/api/supplier";
 
   static Future<List<Supplier>> getAllSuppliers() async {
     final response = await http.get(Uri.parse(baseUrl));

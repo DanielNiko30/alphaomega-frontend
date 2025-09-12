@@ -4,7 +4,7 @@ import '../../model/user/user_model.dart';
 import '../../model/user/add_user_model.dart';
 
 class UserController {
-  final String baseUrl = 'http://192.168.18.18:3000/api/user';
+  final String baseUrl = 'https://tokalphaomegaploso.my.id/api/user';
 
   Future<List<User>> fetchUsers() async {
     final response = await http.get(Uri.parse(baseUrl));

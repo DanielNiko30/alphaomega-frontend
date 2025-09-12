@@ -6,14 +6,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 
 import '../../../../../model/product/stok_model.dart';
-import '../../../../../model/product/product_model.dart';
-import '../../../../../widget/sidebar.dart';
 import '../../../../../model/product/add_product_model.dart';
+import '../../../../../controller/admin/product_controller.dart';
+import '../../../../../widget/sidebar.dart';
 import '../../../masterBarang/addProductShopee/ui/add_product_shopee_screen.dart';
+import '../../addProductShopee/bloc/add_product_shopee_bloc.dart';
 import '../bloc/add_product_bloc.dart';
 import '../bloc/add_product_event.dart';
 import '../bloc/add_product_state.dart';
-import '../../../../../controller/admin/product_controller.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -35,18 +35,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   List<TextEditingController> satuanControllers = [];
   List<TextEditingController> hargaControllers = [];
-  bool isFoto1x1 = true;
 
-  /// Menyimpan product ID terakhir
   String? latestProductId;
 
   @override
   void initState() {
     super.initState();
-    context.read<AddProductBloc>().add(LoadKategori());
+    print("==== [DEBUG] initState AddProductScreen ====");
+    context.read<AddProductBloc>().add(const LoadKategori());
   }
 
-  /// **Pilih Gambar Produk**
+  /// Pick image
   Future<void> _pickImage() async {
     try {
       final XFile? pickedFile =
@@ -54,6 +53,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (pickedFile != null) {
         String ext = pickedFile.name.split('.').last.toLowerCase();
+        print("==== [DEBUG] Picked file: ${pickedFile.name}");
+
         if (!["jpg", "jpeg", "png"].contains(ext)) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Format file tidak didukung!")),
@@ -63,12 +64,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
         if (kIsWeb) {
           Uint8List bytes = await pickedFile.readAsBytes();
+          print("==== [DEBUG] Web image size: ${bytes.length}");
           setState(() {
             fileName = pickedFile.name;
             _imageBytes = bytes;
             _image = null;
           });
         } else {
+          print("==== [DEBUG] Mobile image path: ${pickedFile.path}");
           setState(() {
             fileName = pickedFile.name;
             _image = File(pickedFile.path);
@@ -76,27 +79,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
           });
         }
       }
-    } catch (e) {
-      print("Error picking image: $e");
+    } catch (e, stack) {
+      print("==== [ERROR] Gagal memilih gambar ====");
+      print("Error: $e");
+      print("Stacktrace: $stack");
     }
   }
 
-  /// **Tambah Field Satuan dan Harga**
+  /// Tambah field satuan
   void _addSatuanField() {
+    print("==== [DEBUG] Tambah field satuan ====");
     setState(() {
       satuanControllers.add(TextEditingController());
       hargaControllers.add(TextEditingController());
     });
   }
 
-  /// **Submit Produk ke DB**
+  /// Submit produk
   Future<void> _submitProduct({bool goBack = false}) async {
+    print("==== [DEBUG] Submit Produk dari UI ====");
     if (_formKey.currentState!.validate() &&
         (_imageBytes != null || _image != null)) {
       final satuanList = satuanControllers.map((c) => c.text).toList();
       final hargaList = hargaControllers.map((c) => c.text).toList();
 
+      print("Satuan List: $satuanList");
+      print("Harga List: $hargaList");
+
       Uint8List? imageToSend = kIsWeb ? _imageBytes : _image!.readAsBytesSync();
+      print("Image to send size: ${imageToSend?.length ?? 0}");
 
       context.read<AddProductBloc>().add(
             SubmitProduct(
@@ -120,33 +131,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
               fileName: fileName,
             ),
           );
-
-      // ✅ Ambil produk terbaru setelah berhasil disimpan
-      try {
-        final latestProduct = await ProductController.getLatestProduct();
-        setState(() {
-          latestProductId = latestProduct.idProduct;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Produk berhasil disimpan!")),
-        );
-      } catch (e) {
-        print("Gagal mengambil produk terbaru: $e");
-      }
-
-      if (goBack) {
-        Navigator.pop(context, true); // kembali ke list product
-      }
     } else {
+      print("==== [WARNING] Form belum lengkap atau gambar belum dipilih ====");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Harap lengkapi semua data dan pilih gambar")),
+          content: Text("Harap lengkapi semua data dan pilih gambar"),
+        ),
       );
     }
   }
 
-  /// **Buka Popup Add to Shopee**
+  /// Popup Shopee
   void _openShopeePopup() {
+    print("==== [DEBUG] Membuka popup Shopee ====");
     if (latestProductId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Simpan produk terlebih dahulu!")),
@@ -157,14 +154,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: SizedBox(
-            width: 600,
-            height: 500,
-            child: AddProductShopeeScreen(
-              productId: latestProductId!, // ✅ kirim productId ke popup
+        return BlocProvider(
+          create: (context) =>
+              AddProductShopeeBloc(productController: ProductController()),
+          child: Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: SizedBox(
+              width: 600,
+              height: 500,
+              child: AddProductShopeeScreen(
+                productId: latestProductId!,
+              ),
             ),
           ),
         );
@@ -175,23 +176,33 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Center(
-                  child: Container(
-                    width: 800,
-                    padding: const EdgeInsets.all(16.0),
-                    child: BlocListener<AddProductBloc, AddProductState>(
-                      listener: (context, state) {
-                        if (state is AddProductFailure) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(state.message)),
-                          );
-                        }
-                      },
+      body: BlocListener<AddProductBloc, AddProductState>(
+        listener: (context, state) {
+          if (state is ProductSaved) {
+            print(
+                "==== [DEBUG] Produk berhasil disimpan, ID: ${state.productId}");
+            setState(() {
+              latestProductId = state.productId;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Produk berhasil disimpan!")),
+            );
+          } else if (state is AddProductFailure) {
+            print("==== [ERROR] Submit gagal: ${state.message}");
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+        },
+        child: Stack(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Container(
+                      width: 800,
+                      padding: const EdgeInsets.all(16.0),
                       child: Form(
                         key: _formKey,
                         child: ListView(
@@ -204,10 +215,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             const SizedBox(height: 10),
 
                             /// Foto Produk
-                            const Text(
-                              "* Foto Produk",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
+                            const Text("* Foto Produk",
+                                style: TextStyle(fontWeight: FontWeight.bold)),
                             GestureDetector(
                               onTap: _pickImage,
                               child: Container(
@@ -217,19 +226,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   border: Border.all(color: Colors.grey),
                                 ),
                                 child: _imageBytes != null || _image != null
-                                    ? Image.memory(
-                                        _imageBytes ?? Uint8List(0),
-                                        fit: BoxFit.cover,
-                                      )
+                                    ? (kIsWeb
+                                        ? Image.memory(_imageBytes!,
+                                            fit: BoxFit.cover)
+                                        : Image.file(_image!,
+                                            fit: BoxFit.cover))
                                     : const Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Icon(
-                                            Icons.add_photo_alternate,
-                                            size: 40,
-                                            color: Colors.lightBlue,
-                                          ),
+                                          Icon(Icons.add_photo_alternate,
+                                              size: 40, color: Colors.blue),
                                           Text("Pilih Gambar"),
                                         ],
                                       ),
@@ -241,8 +248,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             TextFormField(
                               controller: namaController,
                               decoration: const InputDecoration(
-                                labelText: "Nama Produk",
-                              ),
+                                  labelText: "Nama Produk"),
                               validator: (value) => value!.isEmpty
                                   ? "Nama tidak boleh kosong"
                                   : null,
@@ -260,25 +266,27 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                         child: Text(kategori.namaKategori),
                                       );
                                     }).toList(),
-                                    onChanged: (value) => setState(
-                                        () => selectedKategori = value),
+                                    onChanged: (value) {
+                                      print(
+                                          "==== [DEBUG] Kategori dipilih: $value");
+                                      setState(() => selectedKategori = value);
+                                    },
                                     decoration: const InputDecoration(
-                                      labelText: "Kategori",
-                                    ),
+                                        labelText: "Kategori"),
                                     validator: (value) =>
                                         value == null ? "Pilih kategori" : null,
                                   );
                                 }
-                                return Container();
+                                return const Center(
+                                    child: CircularProgressIndicator());
                               },
                             ),
 
-                            /// Deskripsi Produk
+                            /// Deskripsi
                             TextFormField(
                               controller: deskripsiController,
-                              decoration: const InputDecoration(
-                                labelText: "Deskripsi",
-                              ),
+                              decoration:
+                                  const InputDecoration(labelText: "Deskripsi"),
                               maxLines: 5,
                               validator: (value) => value!.isEmpty
                                   ? "Deskripsi tidak boleh kosong"
@@ -286,7 +294,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             ),
                             const SizedBox(height: 10),
 
-                            /// Tambah Satuan
+                            /// Tambah satuan
                             ElevatedButton(
                               onPressed: _addSatuanField,
                               child: const Text("Tambah Satuan"),
@@ -302,6 +310,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                           controller: satuanControllers[index],
                                           decoration: const InputDecoration(
                                               hintText: "Satuan"),
+                                          validator: (value) => value!.isEmpty
+                                              ? "Satuan wajib diisi"
+                                              : null,
                                         ),
                                       ),
                                       const SizedBox(width: 10),
@@ -311,6 +322,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                           decoration: const InputDecoration(
                                               hintText: "Harga"),
                                           keyboardType: TextInputType.number,
+                                          validator: (value) => value!.isEmpty
+                                              ? "Harga wajib diisi"
+                                              : null,
                                         ),
                                       ),
                                     ],
@@ -320,7 +334,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            /// TOMBOL AKSI
+                            /// Tombol aksi
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -342,7 +356,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                 ElevatedButton(
                                   onPressed: latestProductId != null
                                       ? _openShopeePopup
-                                      : null, // ❌ nonaktif kalau belum ada productId
+                                      : null,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.orange,
                                   ),
@@ -356,11 +370,31 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const Sidebar(),
-        ],
+              ],
+            ),
+
+            /// Loading indicator
+            BlocBuilder<AddProductBloc, AddProductState>(
+              builder: (context, state) {
+                if (state is AddProductLoading) {
+                  return Container(
+                    color: Colors.black38,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+
+            const Sidebar(),
+          ],
+        ),
       ),
     );
   }

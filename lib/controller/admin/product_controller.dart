@@ -5,6 +5,7 @@ import 'package:frontend/model/product/update_product_model.dart';
 import 'package:frontend/presentation/admin/masterBarang/editProduct/bloc/edit_product_event.dart';
 import 'package:http/http.dart' as http;
 import '../../model/product/konversi_stok.dart';
+import '../../model/product/latest_product_model.dart';
 import '../../model/product/product_model.dart';
 import '../../model/product/edit_productView_model.dart';
 import '../../model/product/update_product_model.dart';
@@ -199,14 +200,24 @@ class ProductController {
     }
   }
 
-  static Future<Product> getLatestProduct() async {
+  static Future<LatestProduct> getLatestProduct() async {
     final response = await http.get(Uri.parse("$baseUrl/latest"));
 
+    print("==== [DEBUG] getLatestProduct Response ====");
+    print("Status Code: ${response.statusCode}");
+    print("Body: ${response.body}");
+
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return Product.fromJson(data);
+      final Map<String, dynamic> jsonData = jsonDecode(response.body);
+
+      if (jsonData['success'] == true && jsonData['data'] != null) {
+        return LatestProduct.fromJson(
+            jsonData['data']); // ✅ Ambil data dari key `data`
+      } else {
+        throw Exception(jsonData['message'] ?? "Gagal memuat produk terbaru");
+      }
     } else {
-      throw Exception("Gagal mengambil produk terbaru");
+      throw Exception("Gagal mengambil produk terbaru: ${response.statusCode}");
     }
   }
 }

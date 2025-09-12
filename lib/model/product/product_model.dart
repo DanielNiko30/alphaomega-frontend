@@ -4,30 +4,30 @@ class Product {
   final String idProduct;
   final String productKategori;
   final String namaProduct;
-  final String? gambarProduct; // Base64 atau URL
-  final String? deskripsiProduct;
+  final String gambarProduct; // Base64 atau URL, default string kosong
+  final String deskripsiProduct; // Deskripsi opsional, default string kosong
   final List<Stok> stokList; // ✅ Tambahan stok list
 
   Product({
     required this.idProduct,
     required this.productKategori,
     required this.namaProduct,
-    this.gambarProduct,
-    this.deskripsiProduct,
+    this.gambarProduct = '',
+    this.deskripsiProduct = '',
     required this.stokList,
   });
 
   /// Konversi dari JSON ke Model
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      idProduct: json['id_product'],
-      productKategori: json['product_kategori'],
-      namaProduct: json['nama_product'],
-      gambarProduct: json['gambar_product'],
-      deskripsiProduct: json['deskripsi_product'],
+      idProduct: json['id_product'] ?? '', // default kosong
+      productKategori: json['product_kategori'] ?? '',
+      namaProduct: json['nama_product'] ?? '',
+      gambarProduct: json['gambar_product'] ?? '', // aman terhadap null
+      deskripsiProduct: json['deskripsi_product'] ?? '', // aman terhadap null
       stokList: (json['stok'] as List? ?? [])
           .map((item) => Stok.fromJson(item))
-          .toList(), // ✅ Parse stok
+          .toList(),
     );
   }
 
@@ -39,9 +39,7 @@ class Product {
       'nama_product': namaProduct,
       'gambar_product': gambarProduct,
       'deskripsi_product': deskripsiProduct,
-      'stok': stokList
-          .map((stok) => stok.toJson())
-          .toList(), // ✅ Stok ikut di-encode
+      'stok': stokList.map((stok) => stok.toJson()).toList(),
     };
   }
 }
