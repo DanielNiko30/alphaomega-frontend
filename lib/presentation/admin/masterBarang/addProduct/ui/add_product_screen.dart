@@ -95,6 +95,26 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
   }
 
+  /// Reset semua field form
+  void _resetForm() {
+    setState(() {
+      namaController.clear();
+      deskripsiController.clear();
+      selectedKategori = null;
+
+      _image = null;
+      _imageBytes = null;
+      fileName = null;
+
+      satuanControllers.forEach((c) => c.clear());
+      hargaControllers.forEach((c) => c.clear());
+      satuanControllers.clear();
+      hargaControllers.clear();
+
+      latestProductId = null;
+    });
+  }
+
   /// Submit produk
   Future<void> _submitProduct({bool goBack = false}) async {
     print("==== [DEBUG] Submit Produk dari UI ====");
@@ -187,6 +207,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Produk berhasil disimpan!")),
             );
+            _resetForm();
           } else if (state is AddProductFailure) {
             print("==== [ERROR] Submit gagal: ${state.message}");
             ScaffoldMessenger.of(context).showSnackBar(
@@ -347,7 +368,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   child: const Text("Tambahkan Barang"),
                                 ),
                                 ElevatedButton(
-                                  onPressed: () => _submitProduct(goBack: true),
+                                  onPressed: () async {
+                                    Navigator.of(context)
+                                        .pushReplacementNamed('/masterBarang');
+                                  },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,
                                   ),
