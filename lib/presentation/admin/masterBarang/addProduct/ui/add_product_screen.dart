@@ -11,6 +11,7 @@ import '../../../../../controller/admin/product_controller.dart';
 import '../../../../../widget/sidebar.dart';
 import '../../../masterBarang/addProductShopee/ui/add_product_shopee_screen.dart';
 import '../../addProductShopee/bloc/add_product_shopee_bloc.dart';
+import '../../addProductShopee/bloc/add_product_shopee_event.dart';
 import '../bloc/add_product_bloc.dart';
 import '../bloc/add_product_event.dart';
 import '../bloc/add_product_state.dart';
@@ -110,8 +111,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
       hargaControllers.forEach((c) => c.clear());
       satuanControllers.clear();
       hargaControllers.clear();
-
-      latestProductId = null;
     });
   }
 
@@ -139,7 +138,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 harga: hargaList,
                 deskripsiProduct: deskripsiController.text,
                 stokList: List.generate(satuanList.length, (index) {
-                  return Stok(
+                  return StokProduct(
                     idStok: "",
                     satuan: satuanList[index],
                     harga: int.parse(hargaList[index]),
@@ -175,8 +174,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
       context: context,
       builder: (BuildContext context) {
         return BlocProvider(
-          create: (context) =>
-              AddProductShopeeBloc(productController: ProductController()),
+          create: (context) => AddProductShopeeBloc(
+              productController: ProductController())
+            ..add(LoadAddShopeeData(
+                productId: latestProductId!)), // ✅ Dispatch event pertama kali
           child: Dialog(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -184,7 +185,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               width: 600,
               height: 500,
               child: AddProductShopeeScreen(
-                productId: latestProductId!,
+                productId: latestProductId!, // ✅ tetap diteruskan ke UI
               ),
             ),
           ),

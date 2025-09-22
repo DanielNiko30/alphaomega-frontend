@@ -5,7 +5,7 @@ import 'package:frontend/controller/user/user_controller.dart';
 import 'package:frontend/model/transaksiJual/dtrans_jual_model.dart';
 import 'package:frontend/model/transaksiJual/htrans_jual_model.dart';
 import 'package:intl/intl.dart';
-import '../../../../model/product/edit_productView_model.dart';
+import '../../../../../model/product/edit_productView_model.dart';
 import 'edit_transaksi_jual_event.dart';
 import 'edit_transaksi_jual_state.dart';
 

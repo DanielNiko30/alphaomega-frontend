@@ -1,4 +1,4 @@
-class Stok {
+class StokProduct {
   final String idStok;
   final String satuan;
   final int harga;
@@ -6,7 +6,7 @@ class Stok {
   final String? idProductShopee;
   final String? idProductLazada;
 
-  Stok({
+  StokProduct({
     required this.idStok,
     required this.satuan,
     required this.harga,
@@ -15,8 +15,8 @@ class Stok {
     this.idProductLazada,
   });
 
-  factory Stok.fromJson(Map<String, dynamic> json) {
-    return Stok(
+  factory StokProduct.fromJson(Map<String, dynamic> json) {
+    return StokProduct(
       idStok: json['id_stok'] ?? '',
       satuan: json['satuan'] ?? '',
       harga: (json['harga'] is String)
@@ -25,8 +25,12 @@ class Stok {
       jumlah: (json['jumlah'] is String)
           ? int.tryParse(json['jumlah']) ?? 0
           : json['jumlah'] ?? 0,
-      idProductShopee: json['id_product_shopee'],
-      idProductLazada: json['id_product_lazada'],
+      idProductShopee: json['id_product_shopee'] != null
+          ? json['id_product_shopee'].toString()
+          : null,
+      idProductLazada: json['id_product_lazada'] != null
+          ? json['id_product_lazada'].toString()
+          : null,
     );
   }
 

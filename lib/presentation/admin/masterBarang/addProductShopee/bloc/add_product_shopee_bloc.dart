@@ -26,8 +26,13 @@ class AddProductShopeeBloc
     emit(AddProductShopeeLoading());
 
     try {
+      // === PERUBAHAN DISINI ===
+      // Sekarang ambil product berdasarkan ID jika diberikan,
+      // kalau tidak, ambil produk terbaru
       final LatestProduct latestProduct =
-          await ProductController.getLatestProduct();
+          await ProductController.getLatestProduct(
+        productId: event.productId, // <-- param opsional
+      );
 
       if (latestProduct.stok.isEmpty) {
         emit(AddProductShopeeFailure(message: "Produk tidak memiliki stok"));
@@ -36,9 +41,10 @@ class AddProductShopeeBloc
 
       final List<StokShopee> stokList = latestProduct.stok.map((s) {
         return StokShopee(
-          satuan: s.satuan ?? 'UNKNOWN',
-          harga: s.harga ?? 0,
-          stokQty: s.stokQty ?? 0,
+          satuan: s.satuan,
+          harga: s.harga,
+          stokQty: s.stokQty,
+          idProductShopee: s.idProductShopee, // ✅ ambil dari LatestProductStok
         );
       }).toList();
 
@@ -118,18 +124,6 @@ class AddProductShopeeBloc
       final logisticIdToSubmit = current.selectedLogistic!.maskChannelId != 0
           ? current.selectedLogistic!.maskChannelId
           : current.selectedLogistic!.id;
-
-      print("=== DEBUG SubmitAddShopeeProduct ===");
-      print("productId: ${current.product.idProduct}");
-      print("itemSku: ${event.itemSku}");
-      print("weight: ${event.weight}");
-      print("dimension: ${event.dimension}");
-      print("condition: ${event.condition}");
-      print("brandId: 0");
-      print("brandName: ${event.brandName ?? 'No Brand'}");
-      print("selectedUnit: ${current.selectedSatuan!.satuan}");
-      print("categoryId: ${current.selectedCategory!.categoryId}");
-      print("logisticIdToSubmit: $logisticIdToSubmit");
 
       final response = await ShopeeController.createProduct(
         idProduct: current.product.idProduct,

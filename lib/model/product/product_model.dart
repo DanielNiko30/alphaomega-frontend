@@ -6,7 +6,7 @@ class Product {
   final String namaProduct;
   final String gambarProduct; // Base64 atau URL, default string kosong
   final String deskripsiProduct; // Deskripsi opsional, default string kosong
-  final List<Stok> stokList; // ✅ Tambahan stok list
+  final List<StokProduct> stokList; // ✅ Tambahan stok list
 
   Product({
     required this.idProduct,
@@ -26,7 +26,7 @@ class Product {
       gambarProduct: json['gambar_product'] ?? '', // aman terhadap null
       deskripsiProduct: json['deskripsi_product'] ?? '', // aman terhadap null
       stokList: (json['stok'] as List? ?? [])
-          .map((item) => Stok.fromJson(item))
+          .map((item) => StokProduct.fromJson(item))
           .toList(),
     );
   }

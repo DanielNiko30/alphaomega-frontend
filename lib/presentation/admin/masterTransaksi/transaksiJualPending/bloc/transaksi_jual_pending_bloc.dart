@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../controller/admin/trans_jual_controller.dart';
+import '../../../../../controller/admin/trans_jual_controller.dart';
 import 'transaksi_jual_pending_event.dart';
 import 'transaksi_jual_pending_state.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../presentation/admin/transaksiJual/bloc/transaksi_jual_bloc.dart';
-import '../presentation/admin/transaksiJual/bloc/transaksi_jual_state.dart';
+import '../presentation/admin/masterTransaksi/transaksiJual/bloc/transaksi_jual_bloc.dart';
+import '../presentation/admin/masterTransaksi/transaksiJual/bloc/transaksi_jual_state.dart';
 
 class PrintPreview extends StatelessWidget {
   final TransJualLoaded transaksi;

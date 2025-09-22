@@ -1,4 +1,4 @@
-import '../../../../model/transaksiJual/htrans_jual_model.dart';
+import '../../../../../model/transaksiJual/htrans_jual_model.dart';
 
 abstract class TransJualPendingState {}
 

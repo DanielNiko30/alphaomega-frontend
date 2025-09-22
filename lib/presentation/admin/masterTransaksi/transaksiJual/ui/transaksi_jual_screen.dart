@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/widget/sidebar.dart';
 import 'package:intl/intl.dart';
-import '../../../../widget/print_preview.dart';
+import '../../../../../widget/print_preview.dart';
 import '../bloc/transaksi_jual_bloc.dart';
 import '../bloc/transaksi_jual_event.dart';
 import '../bloc/transaksi_jual_state.dart';

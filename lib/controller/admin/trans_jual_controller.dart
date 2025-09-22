@@ -94,7 +94,7 @@ class TransaksiJualController {
       String id, HTransJual updatedTransaction) async {
     try {
       final response = await Dio().put(
-        "$baseUrl/$id", // ✅ disesuaikan
+        "$baseUrl/transjual/$id", // ✅ disesuaikan
         data: updatedTransaction.toJson(),
         options: Options(headers: {"Content-Type": "application/json"}),
       );

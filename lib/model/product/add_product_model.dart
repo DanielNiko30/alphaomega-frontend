@@ -9,7 +9,7 @@ class AddProduct {
   final dynamic? gambarProduct; // Base64 atau URL
   final List<String> harga; // Ubah ke List<String> sesuai dengan DB
   final String? deskripsiProduct;
-  final List<Stok> stokList;
+  final List<StokProduct> stokList;
 
   AddProduct({
     this.idProduct,
@@ -31,7 +31,7 @@ class AddProduct {
       harga: List<String>.from(json['harga']), // Sesuai dengan DB
       deskripsiProduct: json['deskripsi_product'],
       stokList:
-          (json['stok'] as List).map((item) => Stok.fromJson(item)).toList(),
+          (json['stok'] as List).map((item) => StokProduct.fromJson(item)).toList(),
     );
   }
 

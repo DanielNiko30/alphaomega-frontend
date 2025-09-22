@@ -8,6 +8,7 @@ import '../../model/product/konversi_stok.dart';
 import '../../model/product/latest_product_model.dart';
 import '../../model/product/product_model.dart';
 import '../../model/product/edit_productView_model.dart';
+import '../../model/product/stok_model.dart' as stokModel;
 import '../../model/product/update_product_model.dart';
 import '../../model/product/add_product_model.dart';
 import '../../model/product/kategori_model.dart';
@@ -79,17 +80,27 @@ class ProductController {
     Uint8List? imageBytes,
   }) async {
     try {
+      // Pastikan stokList selalu diubah ke Map sebelum di-encode
       final List<Map<String, dynamic>> stokJsonList =
-          product.stokList.map((stok) => stok.toJson()).toList();
+          product.stokList.map((item) {
+        if (item is stokModel.StokProduct) {
+          // Convert model ke Map
+          return item.toJson();
+        } else {
+          throw Exception("Tipe stok tidak dikenal: ${item.runtimeType}");
+        }
+      }).toList(); // Pastikan hasil akhir benar-benar List<Map<String, dynamic>>
 
-      FormData formData = FormData.fromMap({
+      print("DEBUG: Data stok yang dikirim ke backend -> $stokJsonList");
+
+      final formData = FormData.fromMap({
         "nama_product": product.namaProduct,
         "product_kategori": product.productKategori,
         "deskripsi_product": product.deskripsiProduct ?? "",
-        "stok_list": jsonEncode(
-            stokJsonList), // Pastikan dikirim dalam format JSON String
+        "stok_list": jsonEncode(stokJsonList), // Encode ke JSON
       });
 
+      // Jika ada gambar
       if (imageBytes != null) {
         formData.files.add(MapEntry(
           "gambar_product",
@@ -103,17 +114,27 @@ class ProductController {
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
 
-      if (response.statusCode == 200) {
-        if (response.data is Map<String, dynamic> &&
-            response.data.containsKey("idProduct")) {
-          return response;
-        } else {
-          throw Exception("⚠️ Response API tidak sesuai! ${response.data}");
+      // Convert balik supaya BLoC tetap menerima List<Stok>
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final resData = Map<String, dynamic>.from(response.data);
+
+        if (resData.containsKey("stok_list") && resData["stok_list"] is List) {
+          resData["stok_list"] = (resData["stok_list"] as List)
+              .map((e) =>
+                  stokModel.StokProduct.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
         }
+
+        return Response(
+          data: resData,
+          statusCode: response.statusCode,
+          requestOptions: response.requestOptions,
+        );
       } else {
-        throw Exception("⚠️ Gagal update produk: ${response.statusMessage}");
+        throw Exception("Response API tidak valid: ${response.data}");
       }
-    } catch (e) {
+    } catch (e, stack) {
+      print("ERROR updateProduct: $e\n$stack");
       throw Exception("⚠️ Error update produk: ${e.toString()}");
     }
   }
@@ -200,8 +221,16 @@ class ProductController {
     }
   }
 
-  static Future<LatestProduct> getLatestProduct() async {
-    final response = await http.get(Uri.parse("$baseUrl/latest"));
+  static Future<LatestProduct> getLatestProduct({String? productId}) async {
+    // 🔹 Tentukan URL: pakai query param id_product jika ada
+    final url = productId != null && productId.isNotEmpty
+        ? Uri.parse("$baseUrl/latest?id_product=$productId")
+        : Uri.parse("$baseUrl/latest");
+
+    print("==== [DEBUG] getLatestProduct ====");
+    print("Request URL: $url");
+
+    final response = await http.get(url);
 
     print("==== [DEBUG] getLatestProduct Response ====");
     print("Status Code: ${response.statusCode}");
@@ -211,13 +240,13 @@ class ProductController {
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
 
       if (jsonData['success'] == true && jsonData['data'] != null) {
-        return LatestProduct.fromJson(
-            jsonData['data']); // ✅ Ambil data dari key `data`
+        return LatestProduct.fromJson(jsonData['data']);
       } else {
-        throw Exception(jsonData['message'] ?? "Gagal memuat produk terbaru");
+        throw Exception(jsonData['message'] ?? "Gagal memuat produk");
       }
     } else {
-      throw Exception("Gagal mengambil produk terbaru: ${response.statusCode}");
+      throw Exception(
+          "Gagal mengambil produk: ${response.statusCode} | ${response.body}");
     }
   }
 }

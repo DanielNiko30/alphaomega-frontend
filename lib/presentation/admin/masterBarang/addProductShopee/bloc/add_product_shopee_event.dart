@@ -2,22 +2,25 @@ import 'package:equatable/equatable.dart';
 import '../../../../../model/product/product_shopee_model.dart';
 import '../../../../../model/product/shope_model.dart';
 
+/// Base abstract event untuk Add Product Shopee
 abstract class AddProductShopeeEvent extends Equatable {
   @override
   List<Object?> get props => [];
 }
 
-/// Load semua data untuk add product Shopee (stok, kategori, logistic)
+/// Event untuk load semua data awal (produk, stok, kategori, logistic)
+/// - Jika productId dikirim, maka backend akan mengambil produk berdasarkan ID
+/// - Jika tidak ada productId, backend mengambil produk terbaru
 class LoadAddShopeeData extends AddProductShopeeEvent {
-  final String productId;
+  final String? productId;
 
-  LoadAddShopeeData({required this.productId});
+  LoadAddShopeeData({this.productId});
 
   @override
-  List<Object?> get props => [productId];
+  List<Object?> get props => [productId ?? ''];
 }
 
-/// Pilih satuan produk
+/// Event untuk memilih satuan produk
 class SelectSatuanShopee extends AddProductShopeeEvent {
   final StokShopee selectedSatuan;
 
@@ -27,7 +30,7 @@ class SelectSatuanShopee extends AddProductShopeeEvent {
   List<Object?> get props => [selectedSatuan];
 }
 
-/// Pilih kategori Shopee
+/// Event untuk memilih kategori Shopee
 class SelectCategoryShopee extends AddProductShopeeEvent {
   final ShopeeCategory selectedCategory;
 
@@ -37,7 +40,7 @@ class SelectCategoryShopee extends AddProductShopeeEvent {
   List<Object?> get props => [selectedCategory];
 }
 
-/// Pilih logistic Shopee
+/// Event untuk memilih logistic Shopee
 class SelectLogisticShopee extends AddProductShopeeEvent {
   final ShopeeLogistic selectedLogistic;
 
@@ -47,14 +50,14 @@ class SelectLogisticShopee extends AddProductShopeeEvent {
   List<Object?> get props => [selectedLogistic];
 }
 
-/// Submit produk ke Shopee
+/// Event untuk submit produk ke Shopee
 class SubmitAddShopeeProduct extends AddProductShopeeEvent {
-  final String itemSku;
-  final num weight;
-  final Map<String, dynamic> dimension;
-  final String condition;
-  final String? brandName;
-  final int? brandId;
+  final String itemSku; // SKU item
+  final num weight; // Berat produk dalam gram
+  final Map<String, dynamic> dimension; // {length, width, height}
+  final String condition; // "NEW" atau "USED"
+  final String? brandName; // Nama brand (optional)
+  final int? brandId; // ID brand (optional)
 
   SubmitAddShopeeProduct({
     required this.itemSku,
@@ -71,7 +74,7 @@ class SubmitAddShopeeProduct extends AddProductShopeeEvent {
         weight,
         dimension,
         condition,
-        brandName,
-        brandId,
+        brandName ?? '',
+        brandId ?? 0,
       ];
 }

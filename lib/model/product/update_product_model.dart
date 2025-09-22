@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:frontend/model/product/stok_model.dart';
 
 class UpdateProduct {
@@ -8,7 +7,11 @@ class UpdateProduct {
   final String namaProduct;
   final String? gambarProduct; // Bisa berupa URL atau base64
   final String? deskripsiProduct;
-  final List<Stok> stokList;
+  final List<StokProduct> stokList;
+
+  // ✅ Tambahan field untuk Shopee dan Lazada
+  final String? idProductShopee;
+  final String? idProductLazada;
 
   UpdateProduct({
     required this.idProduct,
@@ -17,6 +20,8 @@ class UpdateProduct {
     this.gambarProduct,
     this.deskripsiProduct,
     required this.stokList,
+    this.idProductShopee,
+    this.idProductLazada,
   });
 
   /// 🔹 Factory untuk konversi dari JSON ke Model
@@ -24,14 +29,16 @@ class UpdateProduct {
     print("🔥 DEBUG: JSON dari API -> $json");
 
     return UpdateProduct(
-      idProduct: json['id_product'] as String? ?? '',
-      productKategori: json['product_kategori'] as String? ?? '',
-      namaProduct: json['nama_product'] as String? ?? '',
-      gambarProduct: json['gambar_product'] as String?,
-      deskripsiProduct: json['deskripsi_product'] as String?,
-      stokList: (json['stok'] as List<dynamic>?)?.map((item) {
+      idProduct: json['idProduct'] as String? ?? '',
+      productKategori: json['productKategori'] as String? ?? '',
+      namaProduct: json['namaProduct'] as String? ?? '',
+      gambarProduct: json['gambarProduct'] as String?,
+      deskripsiProduct: json['deskripsiProduct'] as String?,
+      idProductShopee: json['idProductShopee'] as String?, // ✅ tambahan
+      idProductLazada: json['idProductLazada'] as String?, // ✅ tambahan
+      stokList: (json['stokList'] as List<dynamic>?)?.map((item) {
             print("🔥 DEBUG: Parsing stok item -> $item");
-            return Stok.fromJson(item as Map<String, dynamic>);
+            return StokProduct.fromJson(item as Map<String, dynamic>);
           }).toList() ??
           [],
     );
@@ -50,8 +57,10 @@ class UpdateProduct {
       'nama_product': namaProduct,
       'gambar_product': gambarProduct ?? "",
       'deskripsi_product': deskripsiProduct ?? "",
-      "stok_list": jsonEncode(
-          stokJsonList), // ✅ Seharusnya sudah List<Map<String, dynamic>>
+      'id_product_shopee': idProductShopee ?? "", // ✅ tambahan
+      'id_product_lazada': idProductLazada ?? "", // ✅ tambahan
+      "stok_list":
+          jsonEncode(stokJsonList), // ✅ sudah List<Map<String, dynamic>>
     };
   }
 
@@ -62,7 +71,9 @@ class UpdateProduct {
     String? namaProduct,
     String? gambarProduct,
     String? deskripsiProduct,
-    List<Stok>? stokList,
+    List<StokProduct>? stokList,
+    String? idProductShopee,
+    String? idProductLazada,
   }) {
     return UpdateProduct(
       idProduct: idProduct ?? this.idProduct,
@@ -71,6 +82,8 @@ class UpdateProduct {
       gambarProduct: gambarProduct ?? this.gambarProduct,
       deskripsiProduct: deskripsiProduct ?? this.deskripsiProduct,
       stokList: stokList ?? this.stokList,
+      idProductShopee: idProductShopee ?? this.idProductShopee,
+      idProductLazada: idProductLazada ?? this.idProductLazada,
     );
   }
 }

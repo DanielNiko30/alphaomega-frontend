@@ -20,9 +20,6 @@ class AddProductBloc extends Bloc<AddProductEvent, AddProductState> {
     on<ProductSavedEvent>(_onProductSavedEvent);
   }
 
-  /// ===============================
-  /// SUBMIT PRODUCT KE BACKEND
-  /// ===============================
   Future<void> _onSubmitProduct(
     SubmitProduct event,
     Emitter<AddProductState> emit,
@@ -30,17 +27,6 @@ class AddProductBloc extends Bloc<AddProductEvent, AddProductState> {
     emit(const AddProductLoading());
 
     try {
-      print("==== [DEBUG] Submit Product ====");
-      print("Nama Produk    : ${event.product.namaProduct}");
-      print("Kategori       : ${event.product.productKategori}");
-      print("Harga List     : ${event.product.harga}");
-      print("Deskripsi      : ${event.product.deskripsiProduct}");
-      print(
-          "Stok List      : ${event.product.stokList.map((e) => e.toJson()).toList()}");
-      print("File Name      : ${event.fileName}");
-      print("Image Bytes    : ${event.imageBytes?.length ?? 0}");
-
-      // Validasi field wajib
       if (event.product.namaProduct.isEmpty ||
           event.product.productKategori.isEmpty ||
           event.product.harga.isEmpty ||
@@ -49,9 +35,6 @@ class AddProductBloc extends Bloc<AddProductEvent, AddProductState> {
         return;
       }
 
-      // ===============================
-      // FORM DATA UNTUK API
-      // ===============================
       final formData = FormData.fromMap({
         "nama_product": event.product.namaProduct,
         "product_kategori": event.product.productKategori,
@@ -76,14 +59,9 @@ class AddProductBloc extends Bloc<AddProductEvent, AddProductState> {
           ),
         );
       } else {
-        print("==== [WARNING] Tidak ada gambar yang dikirim ====");
       }
 
-      print("==== [DEBUG] Mengirim FormData ke backend ====");
       final response = await ProductController.addProduct(formData);
-
-      print("==== [DEBUG] Response Backend ====");
-      print("Status Code : ${response.statusCode}");
       final responseData = Map<String, dynamic>.from(response.data);
 
       // Jangan print base64 panjang
@@ -91,85 +69,50 @@ class AddProductBloc extends Bloc<AddProductEvent, AddProductState> {
         responseData['gambarProduct'] =
             '[BASE64 length: ${responseData['gambarProduct'].length}]';
       }
-      print("Data (no full image) : $responseData");
 
-      // ===============================
-      // CEK RESPONSE BACKEND
-      // ===============================
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print(
-            "==== [DEBUG] Produk berhasil disimpan, ambil produk terbaru ====");
         final latestProduct = await ProductController.getLatestProduct();
-
-        print("==== [DEBUG] Latest Product ====");
-        print("ID Product : ${latestProduct.idProduct}");
-        print("Nama       : ${latestProduct.namaProduct}");
-        print(
-            "Stok       : ${latestProduct.stok.map((e) => e.toJson()).toList()}");
-
         // Emit state ProductSaved agar UI update otomatis
         emit(ProductSaved(productId: latestProduct.idProduct));
       } else {
-        print("==== [ERROR] Gagal menambahkan produk ====");
         emit(const AddProductFailure(message: "Gagal menambahkan produk"));
       }
     } catch (e, stack) {
-      print("==== [EXCEPTION] Terjadi error saat submit ====");
-      print("Error: $e");
-      print("Stacktrace: $stack");
       emit(AddProductFailure(message: "Error: ${e.toString()}"));
     }
   }
 
-  /// ===============================
-  /// LOAD KATEGORI PRODUK
-  /// ===============================
   Future<void> _onLoadKategori(
     LoadKategori event,
     Emitter<AddProductState> emit,
   ) async {
     emit(const KategoriLoading());
     try {
-      print("==== [DEBUG] Memuat kategori produk ====");
       final kategori = await ProductController.fetchKategori();
-      print("==== [DEBUG] Kategori Loaded ====");
       for (var k in kategori) {
         print("Kategori: ${k.idKategori} - ${k.namaKategori}");
       }
       emit(KategoriLoaded(kategori: kategori));
     } catch (e, stack) {
-      print("==== [ERROR] Gagal memuat kategori ====");
-      print("Error: $e");
-      print("Stacktrace: $stack");
       emit(KategoriFailure(message: e.toString()));
     }
   }
 
-  /// ===============================
-  /// PICK IMAGE DAN KOMPRES
-  /// ===============================
   Future<void> _onPickImage(
     PickImage event,
     Emitter<AddProductState> emit,
   ) async {
     emit(const AddProductLoading());
     try {
-      print("==== [DEBUG] Pick Image ====");
-      print("Original Image Bytes: ${event.imageBytes.length}");
-      print("File Name: ${event.fileName}");
-
       if (event.imageBytes.isEmpty) {
         emit(const AddProductFailure(message: "Gambar tidak valid"));
         return;
       }
 
-      // Kompres gambar
       final compressedImage = await FlutterImageCompress.compressWithList(
         event.imageBytes,
         quality: 70,
       );
-
-      print("Compressed Image Bytes: ${compressedImage.length}");
 
       if (compressedImage.isEmpty) {
         emit(const AddProductFailure(message: "Gagal mengompres gambar"));
@@ -182,22 +125,14 @@ class AddProductBloc extends Bloc<AddProductEvent, AddProductState> {
         fileName: event.fileName,
       ));
     } catch (e, stack) {
-      print("==== [ERROR] Gagal memilih gambar ====");
-      print("Error: $e");
-      print("Stacktrace: $stack");
       emit(AddProductFailure(message: "Gagal memilih gambar: ${e.toString()}"));
     }
   }
 
-  /// ===============================
-  /// EVENT SETELAH PRODUK BERHASIL DISIMPAN
-  /// ===============================
   Future<void> _onProductSavedEvent(
     ProductSavedEvent event,
     Emitter<AddProductState> emit,
   ) async {
-    print("==== [DEBUG] ProductSavedEvent diterima ====");
-    print("Product ID: ${event.productId}");
     emit(ProductSaved(productId: event.productId));
   }
 }

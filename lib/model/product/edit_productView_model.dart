@@ -58,31 +58,51 @@ class EditProductView {
 }
 
 class Stok {
+  final String? idStok;
   final String satuan;
   final int jumlah;
   final int harga;
+  final String? idProductShopee; // ✅ Untuk integrasi Shopee
+  final String? idProductLazada; // ✅ Untuk integrasi Lazada
 
-  Stok({required this.satuan, required this.jumlah, required this.harga, required String stok});
+  Stok({
+    this.idStok,
+    required this.satuan,
+    required this.jumlah,
+    required this.harga,
+    required String stok,
+    this.idProductShopee,
+    this.idProductLazada,
+  });
 
   // Factory method untuk decode dari JSON
   factory Stok.fromJson(Map<String, dynamic> json) {
     return Stok(
+      idStok: json['id_stok'] ?? "",
       satuan: json['satuan'] ?? "", // Gunakan string kosong jika null
       jumlah: json['jumlah'] != null
           ? json['jumlah'] as int
           : 0, // Default ke 0 jika null
-      harga: json['harga'] != null
-          ? json['harga'] as int
-          : 0, stok: '', // Default ke 0 jika null
+      harga: json['harga'] != null ? json['harga'] as int : 0,
+      stok: '', // Default ke 0 jika null
+      idProductShopee: json['id_product_shopee'] != null
+          ? json['id_product_shopee'].toString()
+          : null,
+      idProductLazada: json['id_product_lazada'] != null
+          ? json['id_product_lazada'].toString()
+          : null,
     );
   }
 
   // Metode untuk encode ke JSON
   Map<String, dynamic> toJson() {
     return {
+      'id_stok': idStok,
       'satuan': satuan,
       'jumlah': jumlah,
       'harga': harga,
+      'id_product_shopee': idProductShopee,
+      'id_product_lazada': idProductLazada,
     };
   }
 }

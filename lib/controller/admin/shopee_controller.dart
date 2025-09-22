@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:frontend/model/product/shope_model.dart';
 
+import '../../model/product/shopee_product_info.dart';
+
 class ShopeeController {
   static const String baseUrl = "https://tokalphaomegaploso.my.id/api/shopee";
 
@@ -146,6 +148,89 @@ class ShopeeController {
       // Jika gagal, lempar error dari backend
       final message = data['message'] ?? "Gagal menambahkan produk ke Shopee";
       throw Exception(message);
+    }
+  }
+
+  static Future<Map<String, dynamic>> editShopeeProduct({
+    required String itemId,
+    required String itemSku,
+    required num weight,
+    required int categoryId,
+    required int length,
+    required int width,
+    required int height,
+    required String condition,
+    required String selectedUnit,
+    required int logisticId,
+    int brandId = 0,
+    String brandName = "No Brand",
+  }) async {
+    final url = Uri.parse(
+        '$baseUrl/product/update/$itemId'); // Route backend edit product Shopee
+
+    final payload = {
+      "weight": weight,
+      "category_id": categoryId,
+      "dimension": {
+        "height": height,
+        "length": length,
+        "width": width,
+      },
+      "condition": condition,
+      "item_sku": itemSku,
+      "brand_id": brandId,
+      "brand_name": brandName,
+      "selected_unit": selectedUnit,
+      "logistic_id": logisticId,
+    };
+
+    print("=== DEBUG Edit Product Payload ===");
+    print(payload);
+
+    final resp = await http.put(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(payload),
+    );
+
+    final data = jsonDecode(resp.body);
+
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      return data;
+    } else {
+      throw Exception(
+        data['message'] ?? 'Gagal edit product Shopee (${resp.statusCode})',
+      );
+    }
+  }
+
+  /// Ambil detail base info dari Shopee via backend
+  static Future<ShopeeProductInfo> getShopeeProductInfo({
+    required String idProduct,
+    required String satuan,
+  }) async {
+    final url = Uri.parse(
+        '$baseUrl/product/item-info/$idProduct'); // id_product di path
+    final resp = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body:
+          jsonEncode({"satuan": satuan.toUpperCase()}), // pastikan huruf besar
+    );
+
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body);
+      if (body['success'] == true) {
+        // ambil dari field 'data' sesuai backend
+        return ShopeeProductInfo.fromJson(body['data']);
+      } else {
+        throw Exception('Error backend: ${body['message']}');
+      }
+    } else if (resp.statusCode == 404) {
+      throw Exception('Produk atau stok tidak ditemukan (${resp.statusCode})');
+    } else {
+      throw Exception(
+          'Gagal ambil info product (${resp.statusCode}) : ${resp.body}');
     }
   }
 }

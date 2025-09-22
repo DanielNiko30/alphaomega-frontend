@@ -4,20 +4,20 @@ import 'package:frontend/presentation/pegawaiGudang/detailPesanan/ui/detail_pesa
 import 'package:frontend/presentation/pegawaiGudang/listBarangPesanan/ui/list_barang_pesanan_screen.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:frontend/presentation/admin/editTransaksiJual/bloc/edit_transaksi_jual_bloc.dart';
-import 'package:frontend/presentation/admin/editTransaksiJual/bloc/edit_transaksi_jual_event.dart';
-import 'package:frontend/presentation/admin/editTransaksiJual/ui/edit_transaksi_jual_screen.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/editTransaksiJual/bloc/edit_transaksi_jual_bloc.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/editTransaksiJual/bloc/edit_transaksi_jual_event.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/editTransaksiJual/ui/edit_transaksi_jual_screen.dart';
 import 'package:frontend/presentation/admin/masterBarang/addKategori/bloc/add_kategori_event.dart';
 import 'package:frontend/presentation/admin/masterBarang/editProduct/bloc/edit_product_bloc.dart';
 import 'package:frontend/presentation/admin/masterBarang/editProduct/bloc/edit_product_event.dart';
 import 'package:frontend/presentation/admin/masterBarang/editProduct/ui/edit_product_screen.dart';
-import 'package:frontend/presentation/admin/transaksiBeli/ui/transaksi_beli_screen.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/transaksiBeli/ui/transaksi_beli_screen.dart';
 import 'package:frontend/presentation/admin/masterSupplier/ui/add_supplier_screen.dart';
-import 'package:frontend/presentation/admin/transaksiBeli/bloc/transaksi_beli_bloc.dart';
-import 'package:frontend/presentation/admin/transaksiBeli/bloc/transaksi_beli_event.dart';
-import 'package:frontend/presentation/admin/transaksiJual/bloc/transaksi_jual_bloc.dart';
-import 'package:frontend/presentation/admin/transaksiJual/bloc/transaksi_jual_event.dart';
-import 'package:frontend/presentation/admin/transaksiJual/ui/transaksi_jual_screen.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/transaksiBeli/bloc/transaksi_beli_bloc.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/transaksiBeli/bloc/transaksi_beli_event.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/transaksiJual/bloc/transaksi_jual_bloc.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/transaksiJual/bloc/transaksi_jual_event.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/transaksiJual/ui/transaksi_jual_screen.dart';
 import 'package:frontend/presentation/login/login_screen.dart';
 import 'package:frontend/presentation/admin/dashboard/ui/dashboard_screen.dart';
 import 'package:frontend/presentation/admin/masterUser/listUser/ui/master_user_screen.dart';
@@ -33,9 +33,9 @@ import 'package:frontend/presentation/admin/masterBarang/addKategori/ui/add_kate
 
 import 'controller/user/user_controller.dart';
 import 'controller/admin/product_controller.dart';
-import 'presentation/admin/transaksiJualPending/bloc/transaksi_jual_pending_bloc.dart';
-import 'presentation/admin/transaksiJualPending/bloc/transaksi_jual_pending_event.dart';
-import 'presentation/admin/transaksiJualPending/ui/transaksi_jual_pending_screen.dart';
+import 'presentation/admin/masterTransaksi/transaksiJualPending/bloc/transaksi_jual_pending_bloc.dart';
+import 'presentation/admin/masterTransaksi/transaksiJualPending/bloc/transaksi_jual_pending_event.dart';
+import 'presentation/admin/masterTransaksi/transaksiJualPending/ui/transaksi_jual_pending_screen.dart';
 import 'presentation/login/choose_role_screen.dart';
 import 'presentation/pegawaiGudang/detailPesanan/bloc/detail_pesanan_bloc.dart';
 

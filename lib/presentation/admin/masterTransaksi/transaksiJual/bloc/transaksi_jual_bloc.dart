@@ -5,12 +5,12 @@ import 'package:frontend/controller/user/user_controller.dart';
 import 'package:frontend/model/transaksiBeli/dtrans_beli_model.dart';
 import 'package:frontend/model/transaksiBeli/htrans_beli_model.dart';
 import 'package:frontend/model/transaksiJual/htrans_jual_model.dart';
-import '../../../../controller/admin/product_controller.dart';
-import '../../../../controller/admin/trans_beli_controller.dart';
-import '../../../../controller/admin/trans_jual_controller.dart';
-import '../../../../model/transaksiJual/dtrans_jual_model.dart';
-import '../bloc/transaksi_jual_event.dart';
-import '../bloc/transaksi_jual_state.dart';
+import '../../../../../controller/admin/product_controller.dart';
+import '../../../../../controller/admin/trans_beli_controller.dart';
+import '../../../../../controller/admin/trans_jual_controller.dart';
+import '../../../../../model/transaksiJual/dtrans_jual_model.dart';
+import 'transaksi_jual_event.dart';
+import 'transaksi_jual_state.dart';
 
 class TransJualBloc extends Bloc<TransJualEvent, TransJualState> {
   TransJualBloc() : super(TransJualLoading()) {

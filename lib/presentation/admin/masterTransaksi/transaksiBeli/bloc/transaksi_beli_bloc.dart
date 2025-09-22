@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/model/transaksiBeli/dtrans_beli_model.dart';
 import 'package:frontend/model/transaksiBeli/htrans_beli_model.dart';
-import '../../../../controller/admin/product_controller.dart';
-import '../../../../controller/admin/trans_beli_controller.dart';
-import '../../../../controller/supplier/supplier_controller.dart';
-import '../bloc/transaksi_beli_event.dart';
-import '../bloc/transaksi_beli_state.dart';
+import '../../../../../controller/admin/product_controller.dart';
+import '../../../../../controller/admin/trans_beli_controller.dart';
+import '../../../../../controller/supplier/supplier_controller.dart';
+import 'transaksi_beli_event.dart';
+import 'transaksi_beli_state.dart';
 
 class TransBeliBloc extends Bloc<TransBeliEvent, TransBeliState> {
   TransBeliBloc() : super(TransBeliLoading()) {
