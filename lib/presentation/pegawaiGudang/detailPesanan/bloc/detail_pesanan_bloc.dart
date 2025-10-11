@@ -54,9 +54,9 @@ class DetailPesananBloc extends Bloc<DetailPesananEvent, DetailPesananState> {
         return BarangPesanan(
           idProduk: item.idProduk, // ✅ simpan idProduk
           nama: product?["nama"] ?? item.idProduk,
-          qty: item.jumlahBarang.toInt(),
-          harga: item.hargaSatuan,
-          subtotal: item.subtotal,
+          qty: item.jumlahBarang,
+          harga: item.hargaSatuan.toInt(),
+          subtotal: item.subtotal.toInt(),
           satuan: item.satuan,
           siap: keepSiap
               ? (savedStatus[item.idProduk] ??

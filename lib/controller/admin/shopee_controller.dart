@@ -2,12 +2,16 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:frontend/model/product/shope_model.dart';
 
+import '../../model/orderOnline/ship_order_response_model.dart';
+import '../../model/orderOnline/shipped_order_model.dart';
+import '../../model/orderOnline/shipping_document_model.dart';
+import '../../model/orderOnline/shipping_parameter_model.dart';
+import '../../model/orderOnline/shopee_order_model.dart';
 import '../../model/product/shopee_product_info.dart';
 
 class ShopeeController {
   static const String baseUrl = "https://tokalphaomegaploso.my.id/api/shopee";
 
-  /// 1️⃣ Callback Shopee (jarang dipanggil manual, biasanya Shopee yang memanggil ini)
   static Future<Map<String, dynamic>> shopeeCallback(
       String code, String shopId) async {
     final url = Uri.parse('$baseUrl/callback?code=$code&shop_id=$shopId');
@@ -20,7 +24,6 @@ class ShopeeController {
     }
   }
 
-  /// 2️⃣ Ambil daftar produk yang sudah terhubung dengan Shopee
   static Future<List<ShopeeItem>> getItemList() async {
     final response = await http.get(Uri.parse('$baseUrl/items'));
 
@@ -42,7 +45,6 @@ class ShopeeController {
     }
   }
 
-  /// 3️⃣ Ambil daftar kategori Shopee
   static Future<List<ShopeeCategory>> getCategories() async {
     final response = await http.get(Uri.parse('$baseUrl/categories'));
 
@@ -63,7 +65,6 @@ class ShopeeController {
     }
   }
 
-  /// 4️⃣ Ambil daftar logistic Shopee
   static Future<List<ShopeeLogistic>> getLogistics() async {
     final response = await http.get(Uri.parse('$baseUrl/logistics'));
 
@@ -84,7 +85,6 @@ class ShopeeController {
     }
   }
 
-  /// 5️⃣ Ambil brand list berdasarkan kategori
   static Future<List<ShopeeBrand>> getBrands(int categoryId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/brands'),
@@ -107,7 +107,6 @@ class ShopeeController {
     }
   }
 
-  /// 6️⃣ Create product Shopee
   static Future<Map<String, dynamic>> createProduct({
     required String idProduct,
     required String itemSku,
@@ -204,7 +203,6 @@ class ShopeeController {
     }
   }
 
-  /// Ambil detail base info dari Shopee via backend
   static Future<ShopeeProductInfo> getShopeeProductInfo({
     required String idProduct,
     required String satuan,
@@ -231,6 +229,217 @@ class ShopeeController {
     } else {
       throw Exception(
           'Gagal ambil info product (${resp.statusCode}) : ${resp.body}');
+    }
+  }
+
+  static Future<List<dynamic>> getOrders() async {
+    final url = Uri.parse('$baseUrl/orders');
+    final resp = await http.get(url);
+
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body);
+
+      if (body['success'] != true || body['data'] == null) {
+        throw Exception("Response getOrders tidak valid: ${resp.body}");
+      }
+
+      return body['data']['order_list'] ?? [];
+    } else {
+      throw Exception(
+          'Gagal mengambil orders (${resp.statusCode}): ${resp.body}');
+    }
+  }
+
+  Future<List<ShippedOrder>> fetchShippedOrders() async {
+    final url = Uri.parse("$baseUrl/orders/shipped");
+    final response = await http.get(url, headers: {
+      "Content-Type": "application/json",
+      // "Authorization": "Bearer <TOKEN>", // kalau ada auth
+    });
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        final ordersJson = data['data']['order_list'] as List;
+        return ordersJson.map((e) => ShippedOrder.fromJson(e)).toList();
+      } else {
+        throw Exception(data['message'] ?? "Gagal mengambil data");
+      }
+    } else {
+      throw Exception("Error server: ${response.statusCode}");
+    }
+  }
+
+  static Future<Map<String, dynamic>> getOrderDetail(String orderSn) async {
+    final url = Uri.parse('$baseUrl/orders/$orderSn');
+    final resp = await http.get(url);
+
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body);
+
+      if (body['success'] != true || body['data'] == null) {
+        throw Exception("Response getOrderDetail tidak valid: ${resp.body}");
+      }
+
+      return body['data'];
+    } else {
+      throw Exception(
+          'Gagal mengambil detail order (${resp.statusCode}): ${resp.body}');
+    }
+  }
+
+  static Future<List<dynamic>> getFullOrders() async {
+    final url = Uri.parse('$baseUrl/orders/full');
+    final resp = await http.get(url);
+
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body);
+
+      if (body['success'] != true || body['data'] == null) {
+        throw Exception("Response getFullOrders tidak valid: ${resp.body}");
+      }
+
+      return body['data'] ?? [];
+    } else {
+      throw Exception(
+          'Gagal mengambil orders (${resp.statusCode}): ${resp.body}');
+    }
+  }
+
+  Future<List<ShippedOrder>> getShippedOrders() async {
+    final response = await http.get(Uri.parse('$baseUrl/orders/shipped/full'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        final List ordersJson = data['data'] ?? [];
+        return ordersJson.map((e) => ShippedOrder.fromJson(e)).toList();
+      } else {
+        throw Exception(data['message'] ?? 'Gagal mengambil orders shipped');
+      }
+    } else {
+      throw Exception('Server error: ${response.statusCode}');
+    }
+  }
+
+  Future<List<ShopeeOrder>> fetchShopeeOrders() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/orders/full'));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          final List<dynamic> orders = data['data'];
+          return orders.map((json) => ShopeeOrder.fromJson(json)).toList();
+        } else {
+          throw Exception(
+              data['message'] ?? 'Gagal mengambil data order Shopee');
+        }
+      } else {
+        throw Exception("Server error: ${response.statusCode}");
+      }
+    } catch (e) {
+      throw Exception("Error fetchShopeeOrders: $e");
+    }
+  }
+
+  Future<ShippingParameterModel?> getShippingParameter(String orderSn) async {
+    try {
+      final url = Uri.parse('$baseUrl/shipping-parameter');
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"order_sn": orderSn}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return ShippingParameterModel.fromJson(data['data']);
+      } else {
+        print('❌ Gagal mengambil shipping parameter: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error getShippingParameter: $e');
+      return null;
+    }
+  }
+
+  Future<ShipOrderResponse?> setPickup({
+    required String orderSn,
+    required int addressId,
+    required String pickupTimeId,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/ship-order/pickup');
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "order_sn": orderSn,
+          "address_id": addressId,
+          "pickup_time_id": pickupTimeId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return ShipOrderResponse.fromJson(data);
+      } else {
+        print('❌ Gagal set pickup: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error setPickup: $e');
+      return null;
+    }
+  }
+
+  Future<ShipOrderResponse?> setDropoff(String orderSn) async {
+    try {
+      final url = Uri.parse('$baseUrl/ship-order/dropoff');
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"order_sn": orderSn}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return ShipOrderResponse.fromJson(data);
+      } else {
+        print('❌ Gagal set dropoff: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error setDropoff: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> getShippingDocument({
+    required String orderSn,
+    required String packageNumber,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/orders/print-resi'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "order_sn": orderSn,
+        "package_number": packageNumber,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // pastikan ini Map<String, dynamic>
+      return data['data'] as Map<String, dynamic>;
+    } else {
+      throw Exception('Gagal ambil shipping document');
     }
   }
 }

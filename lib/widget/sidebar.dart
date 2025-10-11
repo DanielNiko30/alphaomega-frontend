@@ -104,9 +104,29 @@ class _SidebarState extends State<Sidebar> {
                   _buildListTile(Icons.pending_actions, 'Pesanan Diproses', () {
                     Navigator.pushNamed(context, '/transaksiPenjualanPending');
                   }),
-                  _buildListTile(Icons.shopping_bag, 'Pesanan Online', () {
-                    Navigator.pushNamed(context, '/pesananOnline');
-                  }),
+                  ExpansionTile(
+                    leading: const Icon(Icons.shopping_bag),
+                    title: isCollapsed
+                        ? const SizedBox.shrink()
+                        : const Text('Pesanan Online'),
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.shopping_cart_outlined),
+                        title: isCollapsed ? null : const Text('Shopee'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/shopeeOrders');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.shopping_cart),
+                        title: isCollapsed ? null : const Text('Lazada'),
+                        onTap: () {
+                          Navigator.pushNamed(context,
+                              '/lazadaOrders'); // nanti bisa dibuat route Lazada
+                        },
+                      ),
+                    ],
+                  ),
                   if (!isCollapsed)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),

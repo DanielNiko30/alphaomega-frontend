@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../bloc/list_barang_pesanan_bloc.dart';
 import '../bloc/list_barang_pesanan_event.dart';
 import '../bloc/list_barang_pesanan_state.dart';
@@ -17,8 +17,70 @@ class ListBarangPesananScreen extends StatefulWidget {
 }
 
 class _ListBarangPesananScreenState extends State<ListBarangPesananScreen> {
-  // ✅ Halaman ini otomatis pakai index 0 (Pesanan)
   int _selectedIndex = 0;
+  IO.Socket? socket;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSocket();
+  }
+
+  @override
+  void dispose() {
+    socket?.disconnect();
+    super.dispose();
+  }
+
+  void _initSocket() async {
+    final box = GetStorage();
+    final String? idUser = box.read("id_user");
+    if (idUser == null) return;
+
+    // Connect ke backend Socket.IO
+    socket = IO.io(
+      'https://api.tokalphaomegaploso.my.id',
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .build(),
+    );
+
+    socket!.connect();
+
+    socket!.onConnect((_) {
+      print('✅ Socket connected');
+      // Join room khusus pegawai gudang
+      socket!.emit('joinRoom', idUser); // kirim langsung ID user
+    });
+
+    // Listen event transaksi baru atau update
+    socket!.on('newTransaction', (data) {
+      print('📌 New transaction received: $data');
+      if (mounted) {
+        context.read<TransJualPendingBloc>().add(FetchPendingTransaksi(idUser));
+      }
+    });
+
+    socket!.on('update_transaction', (data) {
+      print('📌 Transaction updated: $data');
+      if (mounted) {
+        context.read<TransJualPendingBloc>().add(FetchPendingTransaksi(idUser));
+      }
+    });
+
+    socket!.onConnect((_) {
+      print('✅ Socket connected');
+    });
+
+    socket!.onConnectError((data) {
+      print('❌ Socket connect error: $data');
+    });
+
+    socket!.onDisconnect((_) {
+      print('⚠️ Socket disconnected');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +92,7 @@ class _ListBarangPesananScreenState extends State<ListBarangPesananScreen> {
           TransJualPendingBloc()..add(FetchPendingTransaksi(idUser ?? "")),
       child: Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: false, // 🔹 Hilangkan tombol back
+          automaticallyImplyLeading: false,
           title: const Text("Transaksi Pending"),
           actions: [
             IconButton(
@@ -59,8 +121,8 @@ class _ListBarangPesananScreenState extends State<ListBarangPesananScreen> {
               return GridView.builder(
                 padding: const EdgeInsets.all(12),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // 🔹 2 kolom
-                  childAspectRatio: 4 / 3, // 🔹 Kotak agak melebar
+                  crossAxisCount: 2,
+                  childAspectRatio: 4 / 3,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
@@ -75,7 +137,6 @@ class _ListBarangPesananScreenState extends State<ListBarangPesananScreen> {
                   return InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
-                      // 🔹 Navigasi ke halaman detail
                       Navigator.pushNamed(
                         context,
                         "/detailPesanan",
@@ -156,12 +217,10 @@ class _ListBarangPesananScreenState extends State<ListBarangPesananScreen> {
           },
         ),
         bottomNavigationBar: CustomNavbar(
-          currentIndex: _selectedIndex, // ✅ selalu 0 di halaman ini
+          currentIndex: _selectedIndex,
           onTap: (index) {
             if (index == 0) {
-              // Sudah di halaman Pesanan, tidak perlu pindah
             } else if (index == 1) {
-              // 🔹 Navigasi ke halaman Master Barang
               Navigator.pushReplacementNamed(context, "/masterBarang");
             }
           },

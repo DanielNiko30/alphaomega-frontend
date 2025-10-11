@@ -1,7 +1,7 @@
 class BarangPesanan {
   final String idProduk; // ✅ tambahin id
   final String nama;
-  final int qty;
+  final double qty;
   final int harga;
   final int subtotal;
   final String satuan;
@@ -22,7 +22,7 @@ class BarangPesanan {
   BarangPesanan copyWith({
     String? idProduk,
     String? nama,
-    int? qty,
+    double? qty,
     int? harga,
     int? subtotal,
     String? satuan,

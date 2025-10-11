@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import '../../../../../model/product/product_model.dart';
+import '../../../../../model/product/product_with_stok_model.dart';
 
+/// ===== Base State =====
 abstract class ListProductState extends Equatable {
   @override
   List<Object?> get props => [];
@@ -9,11 +11,21 @@ abstract class ListProductState extends Equatable {
 /// State saat data produk sedang dimuat
 class ProductLoading extends ListProductState {}
 
-/// State ketika data produk berhasil dimuat
+/// State ketika data produk berhasil dimuat (tanpa stok)
 class ProductLoaded extends ListProductState {
   final List<Product> products;
 
   ProductLoaded(this.products);
+
+  @override
+  List<Object?> get props => [products];
+}
+
+/// State ketika data produk dengan stok berhasil dimuat
+class ProductWithStokLoaded extends ListProductState {
+  final List<ProductWithStok> products;
+
+  ProductWithStokLoaded(this.products);
 
   @override
   List<Object?> get props => [products];

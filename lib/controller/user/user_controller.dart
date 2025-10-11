@@ -18,6 +18,40 @@ class UserController {
     }
   }
 
+  Future<bool> updateUser({
+    required String idUser,
+    required String username,
+    required String name,
+    required String password,
+    required String role,
+    required String noTelp,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/$idUser'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'name': name,
+          'password': password,
+          'role': role,
+          'no_telp': noTelp,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ User updated successfully");
+        return true;
+      } else {
+        print("❌ Failed to update user: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print('Error updating user: $e');
+      return false;
+    }
+  }
+
   Future<AddUser?> createUser({
     required String username,
     required String name,
@@ -47,7 +81,6 @@ class UserController {
     return null;
   }
 
-  /// 🔹 Fungsi untuk update role user
   Future<bool> updateUserRole({
     required String idUser, // harus "USR001", bukan 1
     required String newRole,
@@ -71,7 +104,6 @@ class UserController {
     return false;
   }
 
-  /// 🔹 Ambil semua user role = penjual
   Future<List<User>> fetchPenjual() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/role/penjual'));
@@ -89,7 +121,6 @@ class UserController {
     }
   }
 
-  /// 🔹 Ambil semua user role = pegawai gudang
   Future<List<User>> fetchPegawaiGudang() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/role/gudang'));

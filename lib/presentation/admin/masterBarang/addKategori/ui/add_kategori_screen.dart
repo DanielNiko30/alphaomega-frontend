@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../../controller/admin/product_controller.dart';
 import '../../../../../widget/sidebar.dart';
 import '../bloc/add_kategori_bloc.dart';
@@ -15,128 +14,270 @@ class AddKategoriScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) =>
           KategoriBloc(ProductController())..add(FetchKategori()),
-      child: Scaffold(
-        body: Stack(
-          children: [
-            Row(
+      child: Builder(
+        builder: (context) {
+          final kategoriBloc = context.read<KategoriBloc>();
+          final isDesktop = MediaQuery.of(context).size.width > 700;
+
+          return Scaffold(
+            backgroundColor: Colors.grey[100],
+            body: Stack(
               children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 100, top: 60),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                "Daftar Kategori Produk",
-                                style: TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.bold),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: isDesktop ? 100 : 0,
+                    top: 48,
+                    right: 24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ===== HEADER TITLE =====
+                      Container(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Daftar Kategori Produk",
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
                               ),
-                              Builder(
-                                builder: (dialogContext) => ElevatedButton.icon(
-                                  onPressed: () {
-                                    showDialog(
-                                      context:
-                                          dialogContext, // GUNAKAN dialogContext di sini!
-                                      builder: (context) {
-                                        return BlocProvider.value(
-                                          value: dialogContext
-                                              .read<KategoriBloc>(), // dan ini
-                                          child: AddKategoriDialog(),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => BlocProvider.value(
+                                    value: kategoriBloc,
+                                    child: const AddKategoriDialog(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text("Tambah Kategori"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueAccent,
+                                foregroundColor: Colors.white,
+                                elevation: 3,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 22, vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ===== LIST TABLE =====
+                      const Expanded(child: KategoriList()),
+                    ],
+                  ),
+                ),
+
+                // ===== SIDEBAR (desktop) =====
+                const Sidebar(),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ==================== KATEGORI LIST ====================
+class KategoriList extends StatefulWidget {
+  const KategoriList({super.key});
+
+  @override
+  State<KategoriList> createState() => _KategoriListState();
+}
+
+class _KategoriListState extends State<KategoriList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final kategoriBloc = context.read<KategoriBloc>();
+
+    return BlocBuilder<KategoriBloc, KategoriState>(
+      builder: (context, state) {
+        if (state is KategoriLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is KategoriLoaded) {
+          final kategoriList = state.listKategori;
+
+          if (kategoriList.isEmpty) {
+            return const Center(
+              child: Text(
+                "Belum ada kategori yang ditambahkan.",
+                style: TextStyle(color: Colors.black54),
+              ),
+            );
+          }
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                    color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+              ],
+            ),
+            child: Column(
+              children: [
+                // ==== HEADER FIXED ====
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  decoration: const BoxDecoration(
+                    color: Colors.blueAccent,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(12)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Text(
+                          "NO",
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: Text(
+                          "NAMA KATEGORI",
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Center(
+                          child: Text(
+                            "AKSI",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ==== BODY SCROLLABLE ====
+                Expanded(
+                  child: Scrollbar(
+                    controller: _scrollController,
+                    thumbVisibility: true,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: kategoriList.length,
+                      itemBuilder: (context, index) {
+                        final kategori = kategoriList[index];
+                        final isEven = index % 2 == 0;
+                        return Container(
+                          color: isEven ? Colors.white : Colors.grey[50],
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 1,
+                                child: Text("${index + 1}",
+                                    style:
+                                        const TextStyle(color: Colors.black87)),
+                              ),
+                              Expanded(
+                                flex: 4,
+                                child: Text(
+                                  kategori.namaKategori,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.blueAccent),
+                                      tooltip: "Edit",
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => BlocProvider.value(
+                                            value: kategoriBloc,
+                                            child: EditKategoriDialog(
+                                              idKategori: kategori.idKategori
+                                                  .toString(),
+                                              namaKategori:
+                                                  kategori.namaKategori,
+                                            ),
+                                          ),
                                         );
                                       },
-                                    );
-                                  },
-                                  icon: const Icon(Icons.add),
-                                  label: const Text("Tambah Kategori"),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.redAccent),
+                                      tooltip: "Hapus",
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => DeleteKategoriDialog(
+                                            namaKategori: kategori.namaKategori,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const Expanded(child: KategoriList()),
-                      ],
+                        );
+                      },
                     ),
                   ),
                 ),
               ],
             ),
-            const Sidebar(),
-          ],
-        ),
-      ),
+          );
+        } else if (state is KategoriError) {
+          return Center(child: Text(state.message));
+        }
+        return const SizedBox();
+      },
     );
   }
 }
 
-class KategoriList extends StatelessWidget {
-  const KategoriList({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: Colors.grey[200],
-            child: const Row(
-              children: [
-                Expanded(
-                    child: Text("NO",
-                        style: TextStyle(fontWeight: FontWeight.bold))),
-                Expanded(
-                    flex: 3,
-                    child: Text("NAMA KATEGORI",
-                        style: TextStyle(fontWeight: FontWeight.bold))),
-              ],
-            ),
-          ),
-          Expanded(
-            child: BlocBuilder<KategoriBloc, KategoriState>(
-              builder: (context, state) {
-                if (state is KategoriLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (state is KategoriLoaded) {
-                  final kategoriList = state.listKategori;
-                  return ListView.separated(
-                    itemCount: kategoriList.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final kategori = kategoriList[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(child: Text((index + 1).toString())),
-                            Expanded(
-                                flex: 3, child: Text(kategori.namaKategori)),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                } else if (state is KategoriError) {
-                  return Center(child: Text(state.message));
-                }
-                return const Center(child: Text("Belum ada kategori"));
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
+// ==================== DIALOG TAMBAH ====================
 class AddKategoriDialog extends StatefulWidget {
+  const AddKategoriDialog({super.key});
+
   @override
   State<AddKategoriDialog> createState() => _AddKategoriDialogState();
 }
@@ -150,14 +291,26 @@ class _AddKategoriDialogState extends State<AddKategoriDialog> {
       title: const Text("Tambah Kategori"),
       content: TextField(
         controller: _namaController,
-        decoration: const InputDecoration(labelText: "Nama Kategori"),
+        decoration: const InputDecoration(
+          labelText: "Nama Kategori",
+          border: OutlineInputBorder(),
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text("Batal"),
         ),
-        ElevatedButton(
+        ElevatedButton.icon(
+          icon: const Icon(Icons.save),
+          label: const Text("Simpan"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blueAccent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
           onPressed: () {
             final nama = _namaController.text.trim();
             if (nama.isNotEmpty) {
@@ -165,7 +318,109 @@ class _AddKategoriDialogState extends State<AddKategoriDialog> {
               Navigator.of(context).pop();
             }
           },
-          child: const Text("Simpan"),
+        ),
+      ],
+    );
+  }
+}
+
+// ==================== DIALOG EDIT ====================
+class EditKategoriDialog extends StatefulWidget {
+  final String idKategori;
+  final String namaKategori;
+
+  const EditKategoriDialog({
+    super.key,
+    required this.idKategori,
+    required this.namaKategori,
+  });
+
+  @override
+  State<EditKategoriDialog> createState() => _EditKategoriDialogState();
+}
+
+class _EditKategoriDialogState extends State<EditKategoriDialog> {
+  late TextEditingController _namaController;
+
+  @override
+  void initState() {
+    super.initState();
+    _namaController = TextEditingController(text: widget.namaKategori);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Edit Kategori"),
+      content: TextField(
+        controller: _namaController,
+        decoration: const InputDecoration(
+          labelText: "Nama Kategori",
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("Batal"),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.check_circle_outline),
+          label: const Text("Simpan Perubahan"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orangeAccent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: () {
+            final namaBaru = _namaController.text.trim();
+            if (namaBaru.isNotEmpty) {
+              context
+                  .read<KategoriBloc>()
+                  .add(EditKategori(widget.idKategori, namaBaru));
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ==================== DIALOG DELETE ====================
+class DeleteKategoriDialog extends StatelessWidget {
+  final String namaKategori;
+
+  const DeleteKategoriDialog({super.key, required this.namaKategori});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Hapus Kategori"),
+      content: Text(
+        "Apakah Anda yakin ingin menghapus kategori '$namaKategori'?",
+        style: const TextStyle(fontSize: 15),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Batal"),
+        ),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.delete_forever),
+          label: const Text("Hapus"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
       ],
     );

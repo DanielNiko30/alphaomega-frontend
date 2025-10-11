@@ -10,6 +10,7 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
 
     /// Event untuk melakukan konversi stok
     on<KonversiStokEvent>(_onKonversiStok);
+    on<FetchProductsWithStok>(_onFetchProductsWithStok);
   }
 
   /// Handler untuk FetchProducts
@@ -21,6 +22,17 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
       emit(ProductLoaded(products));
     } catch (e) {
       emit(ProductError("Gagal mengambil data produk: $e"));
+    }
+  }
+
+  Future<void> _onFetchProductsWithStok(
+      FetchProductsWithStok event, Emitter<ListProductState> emit) async {
+    try {
+      emit(ProductLoading());
+      final products = await ProductController.getAllProductsWithStok();
+      emit(ProductWithStokLoaded(products));
+    } catch (e) {
+      emit(ProductError("Gagal mengambil data produk dengan stok: $e"));
     }
   }
 

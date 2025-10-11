@@ -8,6 +8,7 @@ import '../../model/product/konversi_stok.dart';
 import '../../model/product/latest_product_model.dart';
 import '../../model/product/product_model.dart';
 import '../../model/product/edit_productView_model.dart';
+import '../../model/product/product_with_stok_model.dart';
 import '../../model/product/stok_model.dart' as stokModel;
 import '../../model/product/update_product_model.dart';
 import '../../model/product/add_product_model.dart';
@@ -16,7 +17,6 @@ import '../../model/product/kategori_model.dart';
 class ProductController {
   static const String baseUrl = "https://tokalphaomegaploso.my.id/api/product";
 
-  // Ambil semua produk
   static Future<List<Product>> getAllProducts() async {
     final response = await http.get(Uri.parse(baseUrl));
 
@@ -28,7 +28,6 @@ class ProductController {
     }
   }
 
-  // Ambil produk berdasarkan ID
   static Future<EditProductView> getProductById(String id) async {
     final response = await http.get(Uri.parse("$baseUrl/$id"));
 
@@ -48,7 +47,6 @@ class ProductController {
     }
   }
 
-  // Tambah produk (dengan gambar dalam Base64)
   static Future<bool> createProduct(AddProduct product) async {
     final response = await http.post(
       Uri.parse(baseUrl),
@@ -73,7 +71,6 @@ class ProductController {
     }
   }
 
-  // Update produk
   static Future<Response> updateProduct({
     required String id,
     required UpdateProduct product,
@@ -139,7 +136,6 @@ class ProductController {
     }
   }
 
-  // Hapus produk
   static Future<bool> deleteProduct(String id) async {
     final response = await http.delete(Uri.parse("$baseUrl/$id"));
 
@@ -175,6 +171,27 @@ class ProductController {
       }
     } catch (e) {
       throw Exception("Terjadi kesalahan: $e");
+    }
+  }
+
+    static Future<bool> updateKategori(String idKategori, String namaBaru) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/kategori/$idKategori'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "nama_kategori": namaBaru,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final data = jsonDecode(response.body);
+        throw Exception(data["message"] ?? "Gagal memperbarui kategori");
+      }
+    } catch (e) {
+      throw Exception("Terjadi kesalahan saat update kategori: $e");
     }
   }
 
@@ -247,6 +264,31 @@ class ProductController {
     } else {
       throw Exception(
           "Gagal mengambil produk: ${response.statusCode} | ${response.body}");
+    }
+  }
+
+  static Future<List<ProductWithStok>> getAllProductsWithStok() async {
+    final url = Uri.parse("$baseUrl/with-stok");
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(response.body);
+
+        if (jsonBody["success"] == true && jsonBody["data"] != null) {
+          List<dynamic> data = jsonBody["data"];
+          return data.map((e) => ProductWithStok.fromJson(e)).toList();
+        } else {
+          throw Exception(jsonBody["message"] ?? "Data produk kosong");
+        }
+      } else {
+        throw Exception(
+            "Gagal mengambil data produk: ${response.statusCode} | ${response.body}");
+      }
+    } catch (e) {
+      print("❌ Error getAllProductsWithStok: $e");
+      throw Exception("Terjadi kesalahan saat memuat produk dengan stok: $e");
     }
   }
 }

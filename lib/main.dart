@@ -33,6 +33,9 @@ import 'package:frontend/presentation/admin/masterBarang/addKategori/ui/add_kate
 
 import 'controller/user/user_controller.dart';
 import 'controller/admin/product_controller.dart';
+import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_bloc.dart';
+import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_event.dart';
+import 'presentation/admin/masterPesanan/orderShopee/ui/order_shopee_screen.dart';
 import 'presentation/admin/masterTransaksi/transaksiJualPending/bloc/transaksi_jual_pending_bloc.dart';
 import 'presentation/admin/masterTransaksi/transaksiJualPending/bloc/transaksi_jual_pending_event.dart';
 import 'presentation/admin/masterTransaksi/transaksiJualPending/ui/transaksi_jual_pending_screen.dart';
@@ -163,6 +166,10 @@ class MyApp extends StatelessWidget {
             ),
           );
         },
+        '/shopeeOrders': (context) => BlocProvider(
+              create: (context) => ShopeeOrdersBloc()..add(FetchShopeeOrders()),
+              child: const ShopeeOrdersScreen(),
+            ),
       },
       home: const LoginScreen(),
     );

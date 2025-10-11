@@ -7,6 +7,7 @@ class KategoriBloc extends Bloc<KategoriEvent, KategoriState> {
   KategoriBloc(ProductController productController) : super(KategoriInitial()) {
     on<FetchKategori>(_onFetchKategori);
     on<AddKategori>(_onAddKategori);
+    on<EditKategori>(_onEditKategori); // 🔹 Tambahan untuk update kategori
   }
 
   Future<void> _onFetchKategori(
@@ -20,7 +21,8 @@ class KategoriBloc extends Bloc<KategoriEvent, KategoriState> {
     }
   }
 
-  void _onAddKategori(AddKategori event, Emitter<KategoriState> emit) async {
+  Future<void> _onAddKategori(
+      AddKategori event, Emitter<KategoriState> emit) async {
     emit(KategoriLoading());
     try {
       final success = await ProductController.addKategori(event.namaKategori);
@@ -32,6 +34,27 @@ class KategoriBloc extends Bloc<KategoriEvent, KategoriState> {
       }
     } catch (e) {
       emit(KategoriError("Gagal menambahkan kategori: ${e.toString()}"));
+    }
+  }
+
+  /// 🔹 Fungsi baru untuk Edit Kategori
+  Future<void> _onEditKategori(
+      EditKategori event, Emitter<KategoriState> emit) async {
+    emit(KategoriLoading());
+    try {
+      final success = await ProductController.updateKategori(
+        event.idKategori,
+        event.namaBaru,
+      );
+
+      if (success) {
+        final kategoriList = await ProductController.fetchKategori();
+        emit(KategoriLoaded(kategoriList));
+      } else {
+        emit(KategoriError("Gagal memperbarui kategori"));
+      }
+    } catch (e) {
+      emit(KategoriError("Gagal memperbarui kategori: ${e.toString()}"));
     }
   }
 }

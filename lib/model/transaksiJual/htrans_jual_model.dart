@@ -50,9 +50,10 @@ class HTransJual {
       idUserPenjual: json["id_user_penjual"],
       namaPembeli: json["nama_pembeli"],
       tanggal: json["tanggal"],
-      totalHarga: json["total_harga"] is String
+      // Pastikan totalHarga aman untuk int/double
+      totalHarga: (json["total_harga"] is String)
           ? int.parse(json["total_harga"])
-          : json["total_harga"],
+          : (json["total_harga"] as num).toInt(),
       metodePembayaran: json["metode_pembayaran"],
       nomorInvoice: json["nomor_invoice"],
       status: json["status"],

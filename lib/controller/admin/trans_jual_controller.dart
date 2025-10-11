@@ -7,7 +7,6 @@ class TransaksiJualController {
   static const String baseUrl =
       "https://tokalphaomegaploso.my.id/api/transaksiJual";
 
-  /// 🔹 Ambil semua transaksi jual
   static Future<List<HTransJual>> getAllTransactions() async {
     final response = await http.get(Uri.parse(baseUrl));
 
@@ -19,7 +18,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Ambil transaksi jual berdasarkan ID
   static Future<HTransJual> getTransactionById(String id) async {
     final response = await http.get(Uri.parse("$baseUrl/$id"));
 
@@ -33,7 +31,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Ambil invoice number terbaru
   static Future<String> getLatestInvoiceNumber() async {
     final response = await http.get(Uri.parse("$baseUrl/invoice/latest"));
 
@@ -45,7 +42,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Ambil transaksi pending
   static Future<List<HTransJual>> getPendingTransactions() async {
     final response = await http.get(Uri.parse("$baseUrl/status/pending"));
 
@@ -57,7 +53,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Ambil transaksi lunas
   static Future<List<HTransJual>> getLunasTransactions() async {
     final response = await http.get(Uri.parse("$baseUrl/status/lunas"));
 
@@ -69,7 +64,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Tambah transaksi baru
   static Future<Response> createTransaction(HTransJual transaction) async {
     try {
       final response = await Dio().post(
@@ -89,7 +83,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Update transaksi
   static Future<Response> updateTransaction(
       String id, HTransJual updatedTransaction) async {
     try {
@@ -110,7 +103,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Hapus transaksi
   static Future<void> deleteTransaction(String id) async {
     try {
       final response = await Dio().delete("$baseUrl/$id");
@@ -123,7 +115,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Ambil transaksi pending berdasarkan penjual
   static Future<List<HTransJual>> getPendingTransactionsByPenjual(
       String idUserPenjual) async {
     try {
@@ -133,19 +124,32 @@ class TransaksiJualController {
         options: Options(headers: {"Content-Type": "application/json"}),
       );
 
+      print(
+          "DEBUG RAW RESPONSE => ${response.data}"); // ✅ print response mentah
+
       if (response.statusCode == 200) {
         List<dynamic> data = response.data;
-        return data.map((json) => HTransJual.fromJson(json)).toList();
+
+        // ✅ Print tiap item sebelum diparse
+        for (var item in data) {
+          print("DEBUG ITEM => $item");
+        }
+
+        return data.map((json) {
+          print("DEBUG PARSING HTransJual => $json");
+          return HTransJual.fromJson(json);
+        }).toList();
       } else {
         throw Exception(
             "Gagal mengambil transaksi pending penjual: ${response.statusMessage}");
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print("DEBUG ERROR => $e");
+      print("DEBUG STACKTRACE => $stackTrace");
       throw Exception("Error mengambil transaksi pending penjual: $e");
     }
   }
 
-  /// 🔹 Ambil semua transaksi berdasarkan penjual
   static Future<List<HTransJual>> getTransactionsByPenjual(
       String idUserPenjual) async {
     try {
@@ -167,7 +171,6 @@ class TransaksiJualController {
     }
   }
 
-  /// 🔹 Ambil transaksi berdasarkan range tanggal
   static Future<List<HTransJual>> getTransactionsByDateRange(
       DateTime startDate, DateTime endDate) async {
     try {

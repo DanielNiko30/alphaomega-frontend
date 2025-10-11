@@ -9,7 +9,6 @@ import '../../../../../model/product/stok_model.dart';
 import '../../../../../model/product/add_product_model.dart';
 import '../../../../../controller/admin/product_controller.dart';
 import '../../../../../widget/sidebar.dart';
-import '../../../masterBarang/addProductShopee/ui/add_product_shopee_screen.dart';
 import '../../addProductShopee/bloc/add_product_shopee_bloc.dart';
 import '../../addProductShopee/bloc/add_product_shopee_event.dart';
 import '../bloc/add_product_bloc.dart';
@@ -37,96 +36,48 @@ class _AddProductScreenState extends State<AddProductScreen> {
   List<TextEditingController> satuanControllers = [];
   List<TextEditingController> hargaControllers = [];
 
-  String? latestProductId;
-
   @override
   void initState() {
     super.initState();
-    print("==== [DEBUG] initState AddProductScreen ====");
     context.read<AddProductBloc>().add(const LoadKategori());
   }
 
-  /// Pick image
   Future<void> _pickImage() async {
-    try {
-      final XFile? pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
 
-      if (pickedFile != null) {
-        String ext = pickedFile.name.split('.').last.toLowerCase();
-        print("==== [DEBUG] Picked file: ${pickedFile.name}");
-
-        if (!["jpg", "jpeg", "png"].contains(ext)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Format file tidak didukung!")),
-          );
-          return;
-        }
-
-        if (kIsWeb) {
-          Uint8List bytes = await pickedFile.readAsBytes();
-          print("==== [DEBUG] Web image size: ${bytes.length}");
-          setState(() {
-            fileName = pickedFile.name;
-            _imageBytes = bytes;
-            _image = null;
-          });
-        } else {
-          print("==== [DEBUG] Mobile image path: ${pickedFile.path}");
-          setState(() {
-            fileName = pickedFile.name;
-            _image = File(pickedFile.path);
-            _imageBytes = null;
-          });
-        }
+    if (pickedFile != null) {
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        setState(() {
+          _imageBytes = bytes;
+          _image = null;
+          fileName = pickedFile.name;
+        });
+      } else {
+        setState(() {
+          _image = File(pickedFile.path);
+          _imageBytes = null;
+          fileName = pickedFile.name;
+        });
       }
-    } catch (e, stack) {
-      print("==== [ERROR] Gagal memilih gambar ====");
-      print("Error: $e");
-      print("Stacktrace: $stack");
     }
   }
 
-  /// Tambah field satuan
   void _addSatuanField() {
-    print("==== [DEBUG] Tambah field satuan ====");
     setState(() {
       satuanControllers.add(TextEditingController());
       hargaControllers.add(TextEditingController());
     });
   }
 
-  /// Reset semua field form
-  void _resetForm() {
-    setState(() {
-      namaController.clear();
-      deskripsiController.clear();
-      selectedKategori = null;
-
-      _image = null;
-      _imageBytes = null;
-      fileName = null;
-
-      satuanControllers.forEach((c) => c.clear());
-      hargaControllers.forEach((c) => c.clear());
-      satuanControllers.clear();
-      hargaControllers.clear();
-    });
-  }
-
-  /// Submit produk
   Future<void> _submitProduct({bool goBack = false}) async {
-    print("==== [DEBUG] Submit Produk dari UI ====");
     if (_formKey.currentState!.validate() &&
         (_imageBytes != null || _image != null)) {
       final satuanList = satuanControllers.map((c) => c.text).toList();
       final hargaList = hargaControllers.map((c) => c.text).toList();
 
-      print("Satuan List: $satuanList");
-      print("Harga List: $hargaList");
-
       Uint8List? imageToSend = kIsWeb ? _imageBytes : _image!.readAsBytesSync();
-      print("Image to send size: ${imageToSend?.length ?? 0}");
 
       context.read<AddProductBloc>().add(
             SubmitProduct(
@@ -150,67 +101,32 @@ class _AddProductScreenState extends State<AddProductScreen> {
               fileName: fileName,
             ),
           );
+
+      if (goBack) {
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.of(context).pushReplacementNamed('/masterBarang');
+        });
+      }
     } else {
-      print("==== [WARNING] Form belum lengkap atau gambar belum dipilih ====");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Harap lengkapi semua data dan pilih gambar"),
-        ),
+            content: Text("Harap lengkapi semua data dan pilih gambar")),
       );
     }
-  }
-
-  /// Popup Shopee
-  void _openShopeePopup() {
-    print("==== [DEBUG] Membuka popup Shopee ====");
-    if (latestProductId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Simpan produk terlebih dahulu!")),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return BlocProvider(
-          create: (context) => AddProductShopeeBloc(
-              productController: ProductController())
-            ..add(LoadAddShopeeData(
-                productId: latestProductId!)), // ✅ Dispatch event pertama kali
-          child: Dialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: SizedBox(
-              width: 600,
-              height: 500,
-              child: AddProductShopeeScreen(
-                productId: latestProductId!, // ✅ tetap diteruskan ke UI
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xfff7f8fa),
       body: BlocListener<AddProductBloc, AddProductState>(
         listener: (context, state) {
           if (state is ProductSaved) {
-            print(
-                "==== [DEBUG] Produk berhasil disimpan, ID: ${state.productId}");
-            setState(() {
-              latestProductId = state.productId;
-            });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Produk berhasil disimpan!")),
             );
-            _resetForm();
+            Navigator.of(context).pushReplacementNamed('/masterBarang');
           } else if (state is AddProductFailure) {
-            print("==== [ERROR] Submit gagal: ${state.message}");
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
@@ -220,176 +136,311 @@ class _AddProductScreenState extends State<AddProductScreen> {
           children: [
             Row(
               children: [
+                const Sidebar(),
                 Expanded(
-                  child: Center(
-                    child: Container(
-                      width: 800,
-                      padding: const EdgeInsets.all(16.0),
-                      child: Form(
-                        key: _formKey,
-                        child: ListView(
-                          children: [
-                            const Text(
-                              "Informasi Produk",
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 60, vertical: 30),
+                    child: Center(
+                      child: Container(
+                        width: 900,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            const SizedBox(height: 10),
-
-                            /// Foto Produk
-                            const Text("* Foto Produk",
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                width: 100,
-                                height: 300,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(30),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "🛒 Tambah Produk Baru",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
                                 ),
-                                child: _imageBytes != null || _image != null
-                                    ? (kIsWeb
-                                        ? Image.memory(_imageBytes!,
-                                            fit: BoxFit.cover)
-                                        : Image.file(_image!,
-                                            fit: BoxFit.cover))
-                                    : const Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.add_photo_alternate,
-                                              size: 40, color: Colors.blue),
-                                          Text("Pilih Gambar"),
-                                        ],
-                                      ),
                               ),
-                            ),
-                            const SizedBox(height: 10),
+                              const SizedBox(height: 20),
 
-                            /// Nama Produk
-                            TextFormField(
-                              controller: namaController,
-                              decoration: const InputDecoration(
-                                  labelText: "Nama Produk"),
-                              validator: (value) => value!.isEmpty
-                                  ? "Nama tidak boleh kosong"
-                                  : null,
-                            ),
-
-                            /// Dropdown Kategori
-                            BlocBuilder<AddProductBloc, AddProductState>(
-                              builder: (context, state) {
-                                if (state is KategoriLoaded) {
-                                  return DropdownButtonFormField<String>(
-                                    value: selectedKategori,
-                                    items: state.kategori.map((kategori) {
-                                      return DropdownMenuItem<String>(
-                                        value: kategori.idKategori,
-                                        child: Text(kategori.namaKategori),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      print(
-                                          "==== [DEBUG] Kategori dipilih: $value");
-                                      setState(() => selectedKategori = value);
-                                    },
-                                    decoration: const InputDecoration(
-                                        labelText: "Kategori"),
-                                    validator: (value) =>
-                                        value == null ? "Pilih kategori" : null,
-                                  );
-                                }
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              },
-                            ),
-
-                            /// Deskripsi
-                            TextFormField(
-                              controller: deskripsiController,
-                              decoration:
-                                  const InputDecoration(labelText: "Deskripsi"),
-                              maxLines: 5,
-                              validator: (value) => value!.isEmpty
-                                  ? "Deskripsi tidak boleh kosong"
-                                  : null,
-                            ),
-                            const SizedBox(height: 10),
-
-                            /// Tambah satuan
-                            ElevatedButton(
-                              onPressed: _addSatuanField,
-                              child: const Text("Tambah Satuan"),
-                            ),
-                            Column(
-                              children: List.generate(
-                                satuanControllers.length,
-                                (index) {
-                                  return Row(
+                              // === FOTO PRODUK ===
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: satuanControllers[index],
-                                          decoration: const InputDecoration(
-                                              hintText: "Satuan"),
-                                          validator: (value) => value!.isEmpty
-                                              ? "Satuan wajib diisi"
-                                              : null,
-                                        ),
+                                      const Text(
+                                        "Foto Produk",
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold),
                                       ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: hargaControllers[index],
-                                          decoration: const InputDecoration(
-                                              hintText: "Harga"),
-                                          keyboardType: TextInputType.number,
-                                          validator: (value) => value!.isEmpty
-                                              ? "Harga wajib diisi"
-                                              : null,
+                                      const SizedBox(height: 10),
+                                      GestureDetector(
+                                        onTap: _pickImage,
+                                        child: Container(
+                                          height: 250,
+                                          width: double.infinity,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xfff4f6f8),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          child: _imageBytes != null ||
+                                                  _image != null
+                                              ? AspectRatio(
+                                                  aspectRatio:
+                                                      1, // bikin tampilan 1:1 proporsional
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    child: kIsWeb
+                                                        ? Image.memory(
+                                                            _imageBytes!,
+                                                            fit: BoxFit
+                                                                .contain, // biar tidak ke-zoom / cemét
+                                                          )
+                                                        : Image.file(
+                                                            _image!,
+                                                            fit: BoxFit.contain,
+                                                          ),
+                                                  ),
+                                                )
+                                              : const Center(
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .add_photo_alternate_outlined,
+                                                        color: Colors.blue,
+                                                        size: 48,
+                                                      ),
+                                                      SizedBox(height: 8),
+                                                      Text(
+                                                        "Klik untuk memilih gambar",
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.black54),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                         ),
                                       ),
                                     ],
-                                  );
-                                },
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
 
-                            /// Tombol aksi
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () =>
-                                      _submitProduct(goBack: false),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                  ),
-                                  child: const Text("Tambahkan Barang"),
+                              const SizedBox(height: 20),
+
+                              // === INFORMASI PRODUK ===
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                ElevatedButton(
-                                  onPressed: () async {
-                                    Navigator.of(context)
-                                        .pushReplacementNamed('/masterBarang');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Informasi Produk",
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextFormField(
+                                        controller: namaController,
+                                        decoration: const InputDecoration(
+                                          labelText: "Nama Produk",
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        validator: (v) => v!.isEmpty
+                                            ? "Nama produk wajib diisi"
+                                            : null,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      BlocBuilder<AddProductBloc,
+                                          AddProductState>(
+                                        builder: (context, state) {
+                                          if (state is KategoriLoaded) {
+                                            return DropdownButtonFormField<
+                                                String>(
+                                              value: selectedKategori,
+                                              items: state.kategori
+                                                  .map((kategori) {
+                                                return DropdownMenuItem<String>(
+                                                  value: kategori.idKategori,
+                                                  child: Text(
+                                                      kategori.namaKategori),
+                                                );
+                                              }).toList(),
+                                              onChanged: (value) {
+                                                setState(() =>
+                                                    selectedKategori = value);
+                                              },
+                                              decoration: const InputDecoration(
+                                                labelText: "Kategori",
+                                                border: OutlineInputBorder(),
+                                              ),
+                                              validator: (value) =>
+                                                  value == null
+                                                      ? "Pilih kategori"
+                                                      : null,
+                                            );
+                                          }
+                                          return const Center(
+                                              child:
+                                                  CircularProgressIndicator());
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextFormField(
+                                        controller: deskripsiController,
+                                        maxLines: 5,
+                                        decoration: const InputDecoration(
+                                          labelText: "Deskripsi Produk",
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        validator: (v) => v!.isEmpty
+                                            ? "Deskripsi wajib diisi"
+                                            : null,
+                                      ),
+                                    ],
                                   ),
-                                  child: const Text("Simpan & Kembali"),
                                 ),
-                                ElevatedButton(
-                                  onPressed: latestProductId != null
-                                      ? _openShopeePopup
-                                      : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange,
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // === SATUAN & HARGA ===
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Satuan & Harga",
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      ElevatedButton.icon(
+                                        onPressed: _addSatuanField,
+                                        icon: const Icon(Icons.add),
+                                        label: const Text("Tambah Satuan"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue.shade600,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      ...List.generate(
+                                        satuanControllers.length,
+                                        (index) => Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 6),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller:
+                                                      satuanControllers[index],
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    labelText: "Satuan",
+                                                    border:
+                                                        OutlineInputBorder(),
+                                                  ),
+                                                  validator: (v) => v!.isEmpty
+                                                      ? "Satuan wajib diisi"
+                                                      : null,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller:
+                                                      hargaControllers[index],
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    labelText: "Harga",
+                                                    border:
+                                                        OutlineInputBorder(),
+                                                  ),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  validator: (v) => v!.isEmpty
+                                                      ? "Harga wajib diisi"
+                                                      : null,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  child: const Text("Add Product to Shopee"),
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+
+                              const SizedBox(height: 30),
+
+                              // === TOMBOL SIMPAN ===
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () => _submitProduct(goBack: true),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
+                                    backgroundColor: Colors.blueAccent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 4,
+                                  ),
+                                  child: const Text(
+                                    "💾 Simpan Produk",
+                                    style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -397,27 +448,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ],
             ),
-
-            /// Loading indicator
             BlocBuilder<AddProductBloc, AddProductState>(
               builder: (context, state) {
                 if (state is AddProductLoading) {
                   return Container(
                     color: Colors.black38,
                     child: const Center(
-                      child: SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: CircularProgressIndicator(strokeWidth: 3),
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 3),
                     ),
                   );
                 }
                 return const SizedBox.shrink();
               },
             ),
-
-            const Sidebar(),
           ],
         ),
       ),

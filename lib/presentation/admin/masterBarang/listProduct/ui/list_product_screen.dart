@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-
+import '../../../../../controller/admin/product_controller.dart';
+import '../../../../../model/product/konversi_stok.dart';
+import '../../../../../model/product/product_with_stok_model.dart';
 import '../bloc/list_product_bloc.dart';
 import '../bloc/list_product_event.dart';
 import '../bloc/list_product_state.dart';
-import '../../../../../model/product/konversi_stok.dart';
-import '../../../../../controller/admin/product_controller.dart';
 import '../../../../../widget/sidebar.dart';
 import '../../../../../widget/navbar.dart';
 
@@ -21,20 +21,19 @@ class ListProductScreen extends StatefulWidget {
 class _ListProductScreenState extends State<ListProductScreen> {
   final box = GetStorage();
   late String? role;
-
-  int _selectedIndex = 1; // ✅ Halaman ini selalu index 1 (Master Barang)
+  String _searchQuery = "";
+  int _selectedIndex = 1;
 
   @override
   void initState() {
     super.initState();
-    role = box.read("role"); // ambil role dari local storage
+    role = box.read("role");
+    // 🔥 Load produk + stok
+    context.read<ListProductBloc>().add(FetchProductsWithStok());
   }
 
   void _onNavbarTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
+    setState(() => _selectedIndex = index);
     if (index == 0) {
       Navigator.pushReplacementNamed(context, "/listPesanan");
     } else if (index == 1) {
@@ -43,11 +42,17 @@ class _ListProductScreenState extends State<ListProductScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
-    if (role == "pegawai gudang") {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700; // threshold mobile
+
+    final isGudang = role == "pegawai gudang";
+
+    // Mobile / Pegawai Gudang: tampil fullscreen tanpa sidebar
+    if (isMobile || isGudang) {
       return Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: false, // hilangkan tombol back
           title: const Text("Daftar Produk"),
           actions: [
             IconButton(
@@ -61,36 +66,105 @@ class _ListProductScreenState extends State<ListProductScreen> {
         ),
         body: _buildBody(),
         bottomNavigationBar: CustomNavbar(
-          currentIndex: _selectedIndex, // ✅ Navbar aktif di index 1
+          currentIndex: _selectedIndex,
           onTap: _onNavbarTap,
         ),
       );
     }
 
-    // ✅ Jika role BUKAN pegawai gudang → tampil dengan sidebar
+    // Desktop: overlay sidebar
     return Scaffold(
-      body: Row(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: Stack(
         children: [
-          const Sidebar(),
-          Expanded(
+          // Konten utama dengan margin kiri supaya tidak tertutup sidebar
+          Padding(
+            padding: const EdgeInsets.only(
+                left: 100, top: 48, right: 24, bottom: 16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppBar(
-                  automaticallyImplyLeading: false, // hilangkan hamburger
-                  title: const Text("Daftar Produk"),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      onPressed: () {
-                        box.erase();
-                        Navigator.pushReplacementNamed(context, "/login");
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Daftar Produk",
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result =
+                            await Navigator.pushNamed(context, '/addProduct');
+                        if (result == true) {
+                          context
+                              .read<ListProductBloc>()
+                              .add(FetchProductsWithStok());
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Produk berhasil ditambahkan"),
+                            ),
+                          );
+                        }
                       },
+                      icon: const Icon(Icons.add),
+                      label: const Text("Tambah Produk"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                Expanded(child: _buildBody()),
+                const SizedBox(height: 16),
+                // Search bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      )
+                    ],
+                  ),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: "Cari produk berdasarkan nama...",
+                      border: InputBorder.none,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value.toLowerCase());
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Grid produk
+                Expanded(
+                    child: ProductGrid(searchQuery: _searchQuery, role: role)),
               ],
             ),
+          ),
+
+          // Sidebar overlay
+          const Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Sidebar(),
           ),
         ],
       ),
@@ -101,9 +175,8 @@ class _ListProductScreenState extends State<ListProductScreen> {
     return BlocListener<ListProductBloc, ListProductState>(
       listener: (context, state) {
         if (state is KonversiStokSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(state.message)));
         } else if (state is KonversiStokFailed) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -113,56 +186,17 @@ class _ListProductScreenState extends State<ListProductScreen> {
           );
         }
       },
-      child: Column(
-        children: [
-          // ✅ Header + Tombol Tambah (hanya untuk non-gudang)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (role != "pegawai gudang")
-                  const Text(
-                    "Daftar Produk",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                if (role != "pegawai gudang")
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final result =
-                          await Navigator.pushNamed(context, '/addProduct');
-                      if (result == true) {
-                        context.read<ListProductBloc>().add(FetchProducts());
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Produk berhasil ditambahkan"),
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text("Tambah"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // ✅ List Produk
-          Expanded(child: ProductList(role: role)),
-        ],
-      ),
+      child: ProductGrid(searchQuery: _searchQuery, role: role),
     );
   }
 }
 
-class ProductList extends StatelessWidget {
+// ================== PRODUCT GRID ==================
+class ProductGrid extends StatelessWidget {
+  final String searchQuery;
   final String? role;
-  const ProductList({super.key, required this.role});
+
+  const ProductGrid({super.key, required this.searchQuery, required this.role});
 
   @override
   Widget build(BuildContext context) {
@@ -170,82 +204,276 @@ class ProductList extends StatelessWidget {
       builder: (context, state) {
         if (state is ProductLoading) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is ProductLoaded) {
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: state.products.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final product = state.products[index];
-              final parentContext = context;
+        } else if (state is ProductWithStokLoaded) {
+          final filtered = state.products
+              .where((p) =>
+                  p.namaProduct.toLowerCase().contains(searchQuery) ||
+                  p.productKategori.toLowerCase().contains(searchQuery))
+              .toList();
 
-              return Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  leading: product.gambarProduct != null
-                      ? Image.memory(
-                          base64Decode(product.gambarProduct!.split(",")[1]),
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                        )
-                      : const Icon(Icons.image_not_supported, size: 40),
-                  title: Text(
-                    product.namaProduct,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        Navigator.pushNamed(
-                          context,
-                          '/editProduct',
-                          arguments: product.idProduct,
-                        );
-                      } else if (value == 'konversi') {
-                        _showKonversiDialog(parentContext, product.idProduct);
-                      }
-                    },
-                    itemBuilder: (context) {
-                      if (role == "pegawai gudang") {
-                        return const [
-                          PopupMenuItem(
-                            value: 'konversi',
-                            child: Text('Konversi Stok'),
-                          ),
-                        ];
-                      } else {
-                        return const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Edit'),
-                          ),
-                          PopupMenuItem(
-                            value: 'konversi',
-                            child: Text('Konversi Stok'),
-                          ),
-                        ];
-                      }
-                    },
-                  ),
-                ),
-              );
+          if (filtered.isEmpty) {
+            return const Center(child: Text("Produk tidak ditemukan"));
+          }
+
+          final screenWidth = MediaQuery.of(context).size.width;
+          int crossAxisCount = 6;
+          if (screenWidth < 1600) crossAxisCount = 5;
+          if (screenWidth < 1300) crossAxisCount = 4;
+          if (screenWidth < 900) crossAxisCount = 3;
+          if (screenWidth < 600) crossAxisCount = 2;
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(12),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              childAspectRatio: 0.8,
+            ),
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              final product = filtered[index];
+              return _buildProductCard(context, product);
             },
           );
         } else if (state is ProductError) {
           return Center(child: Text(state.message));
+        } else {
+          return const Center(child: Text("Tidak ada data"));
         }
-        return const Center(child: Text("Tidak ada data"));
       },
     );
   }
 
-  /// Dialog Konversi Stok
+  Widget _buildProductCard(BuildContext context, ProductWithStok product) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
+    // Minimal tinggi card desktop supaya 2 stok terlihat
+    final double minHeightDesktop = 240;
+
+    return Container(
+      constraints: BoxConstraints(
+        minHeight: isMobile ? 0 : minHeightDesktop,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // === Gambar Produk ===
+          AspectRatio(
+            aspectRatio: 1.2, // lebih tinggi → foto lebih besar
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12)),
+                    child: (product.gambarProduct != null &&
+                            product.gambarProduct!.isNotEmpty)
+                        ? Image.memory(
+                            base64Decode(product.gambarProduct!.split(",")[1]),
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image_outlined,
+                                size: 48, color: Colors.grey),
+                          ),
+                  ),
+                ),
+                if (!isMobile)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert,
+                            size: 18, color: Colors.white),
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                              color: Colors.grey.shade200, width: 0.5),
+                        ),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            Navigator.pushNamed(context, '/editProduct',
+                                arguments: product.idProduct);
+                          } else if (value == 'konversi') {
+                            _showKonversiDialog(context, product.idProduct);
+                          }
+                        },
+                        itemBuilder: (context) {
+                          if (role == "pegawai gudang") {
+                            return [
+                              PopupMenuItem(
+                                value: 'konversi',
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.swap_horiz,
+                                        size: 18, color: Colors.black87),
+                                    SizedBox(width: 8),
+                                    Text('Konversi Stok',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                            ];
+                          } else {
+                            return [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.edit,
+                                        size: 18, color: Colors.black87),
+                                    SizedBox(width: 8),
+                                    Text('Edit',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'konversi',
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.swap_horiz,
+                                        size: 18, color: Colors.black87),
+                                    SizedBox(width: 8),
+                                    Text('Konversi Stok',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ),
+                            ];
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // === Nama Produk ===
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
+            child: Text(
+              product.namaProduct,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Colors.black87),
+            ),
+          ),
+
+          // === Desktop stok ===
+          if (!isMobile) ...[
+            const Divider(height: 6, thickness: 0.5),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Expanded(
+                      flex: 3,
+                      child: Text("Satuan",
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600))),
+                  Expanded(
+                      flex: 2,
+                      child: Text("Stok",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600))),
+                  Expanded(
+                      flex: 4,
+                      child: Text("Harga",
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600))),
+                ],
+              ),
+            ),
+
+            // Scrollable stok list
+            // Scrollable stok list
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: 40, // minimal 2 stok terlihat
+                  maxHeight: 120, // maksimal tinggi scrollable
+                ),
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: ListView.builder(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    physics: const ClampingScrollPhysics(),
+                    itemCount: product.stokList.length,
+                    itemBuilder: (context, i) {
+                      final s = product.stokList[i];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                                flex: 3,
+                                child: Text(s.satuan,
+                                    style: const TextStyle(fontSize: 11))),
+                            Expanded(
+                                flex: 2,
+                                child: Text("${s.stok}",
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontSize: 11))),
+                            Expanded(
+                              flex: 4,
+                              child: Text(
+                                "Rp ${s.harga.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.')}",
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Future<void> _showKonversiDialog(
       BuildContext parentContext, String productId) async {
     final satuanList = await ProductController.getSatuanByProductId(productId);
@@ -260,41 +488,42 @@ class ProductList extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           title: const Text("Konversi Stok"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Dari Satuan"),
-                items: satuanList
-                    .where((s) => s.jumlah > 0)
-                    .map((s) => DropdownMenuItem(
-                          value: s.satuan,
-                          child: Text("${s.satuan} (stok: ${s.jumlah})"),
-                        ))
-                    .toList(),
-                onChanged: (val) => dariSatuan = val,
-              ),
-              TextField(
-                controller: jumlahDariController,
-                decoration: const InputDecoration(labelText: "Jumlah Dari"),
-                keyboardType: TextInputType.number,
-              ),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Ke Satuan"),
-                items: satuanList
-                    .map((s) => DropdownMenuItem(
-                          value: s.satuan,
-                          child: Text("${s.satuan} (stok: ${s.jumlah})"),
-                        ))
-                    .toList(),
-                onChanged: (val) => keSatuan = val,
-              ),
-              TextField(
-                controller: jumlahKeController,
-                decoration: const InputDecoration(labelText: "Jumlah Ke"),
-                keyboardType: TextInputType.number,
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: "Dari Satuan"),
+                  items: satuanList
+                      .where((s) => s.jumlah > 0)
+                      .map((s) => DropdownMenuItem(
+                            value: s.satuan,
+                            child: Text("${s.satuan} (stok: ${s.jumlah})"),
+                          ))
+                      .toList(),
+                  onChanged: (val) => dariSatuan = val,
+                ),
+                TextField(
+                  controller: jumlahDariController,
+                  decoration: const InputDecoration(labelText: "Jumlah Dari"),
+                  keyboardType: TextInputType.number,
+                ),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: "Ke Satuan"),
+                  items: satuanList
+                      .map((s) => DropdownMenuItem(
+                            value: s.satuan,
+                            child: Text("${s.satuan} (stok: ${s.jumlah})"),
+                          ))
+                      .toList(),
+                  onChanged: (val) => keSatuan = val,
+                ),
+                TextField(
+                  controller: jumlahKeController,
+                  decoration: const InputDecoration(labelText: "Jumlah Ke"),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

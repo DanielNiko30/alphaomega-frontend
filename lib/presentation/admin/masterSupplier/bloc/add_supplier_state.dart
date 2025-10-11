@@ -8,8 +8,9 @@ class SupplierLoading extends SupplierState {}
 
 class SupplierLoaded extends SupplierState {
   final List<Supplier> listSupplier;
+  final List<Supplier>? filteredList;
 
-  SupplierLoaded(this.listSupplier);
+  SupplierLoaded(this.listSupplier, {this.filteredList});
 }
 
 class SupplierError extends SupplierState {

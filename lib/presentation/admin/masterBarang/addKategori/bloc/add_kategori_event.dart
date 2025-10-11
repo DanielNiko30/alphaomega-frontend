@@ -7,3 +7,10 @@ class AddKategori extends KategoriEvent {
 
   AddKategori(this.namaKategori);
 }
+
+class EditKategori extends KategoriEvent {
+  final String idKategori;
+  final String namaBaru;
+
+  EditKategori(this.idKategori, this.namaBaru);
+}

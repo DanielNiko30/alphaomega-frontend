@@ -6,7 +6,6 @@ import '../../model/transaksiBeli/htrans_beli_model.dart';
 class TransaksiBeliController {
   static const String baseUrl = "https://tokalphaomegaploso.my.id/api/transaksiBeli";
 
-  // Ambil semua transaksi beli
   static Future<List<HTransBeli>> getAllTransactions() async {
     final response = await http.get(Uri.parse(baseUrl));
 
@@ -18,7 +17,6 @@ class TransaksiBeliController {
     }
   }
 
-  // Ambil transaksi berdasarkan ID
   static Future<HTransBeli> getTransactionById(String id) async {
     final response = await http.get(Uri.parse("$baseUrl/$id"));
 
@@ -38,7 +36,6 @@ class TransaksiBeliController {
     }
   }
 
-  // Tambah transaksi beli
   static Future<Response> createTransaction(HTransBeli transaction) async {
     try {
       final List<Map<String, dynamic>> detailJsonList =
@@ -75,7 +72,6 @@ class TransaksiBeliController {
     }
   }
 
-  // Update transaksi beli
   static Future<Response> updateTransaction({
     required String id,
     required HTransBeli transaction,
@@ -114,7 +110,6 @@ class TransaksiBeliController {
     }
   }
 
-  // Hapus transaksi beli
   static Future<bool> deleteTransaction(String id) async {
     final response = await http.delete(Uri.parse("$baseUrl/$id"));
 

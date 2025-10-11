@@ -38,18 +38,15 @@ class AuthController {
     }
   }
 
-  // ✅ Ambil token dari local storage
   String? getToken() {
     return box.read('token');
   }
 
-  // ✅ Ambil data user dari local storage
   Map<String, dynamic>? getUser() {
     final user = box.read('user');
     return user != null ? Map<String, dynamic>.from(user) : null;
   }
 
-  // ✅ Logout -> hapus data di local storage
   Future<void> logout() async {
     await box.remove('token');
     await box.remove('user');
