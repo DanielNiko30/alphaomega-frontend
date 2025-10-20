@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:frontend/model/product/shope_model.dart';
-
 import '../../model/orderOnline/ship_order_response_model.dart';
-import '../../model/orderOnline/shipped_order_model.dart';
 import '../../model/orderOnline/shipping_document_model.dart';
 import '../../model/orderOnline/shipping_parameter_model.dart';
 import '../../model/orderOnline/shopee_order_model.dart';
@@ -207,19 +205,17 @@ class ShopeeController {
     required String idProduct,
     required String satuan,
   }) async {
-    final url = Uri.parse(
-        '$baseUrl/product/item-info/$idProduct'); // id_product di path
+    final url = Uri.parse('$baseUrl/product/item-info/$idProduct');
     final resp = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
-      body:
-          jsonEncode({"satuan": satuan.toUpperCase()}), // pastikan huruf besar
+      body: jsonEncode({"satuan": satuan.toUpperCase()}),
     );
 
     if (resp.statusCode == 200) {
       final body = jsonDecode(resp.body);
       if (body['success'] == true) {
-        // ambil dari field 'data' sesuai backend
+        // mapping field 'data' ke ShopeeProductInfo dengan parsing logistics aman
         return ShopeeProductInfo.fromJson(body['data']);
       } else {
         throw Exception('Error backend: ${body['message']}');
@@ -250,7 +246,7 @@ class ShopeeController {
     }
   }
 
-  Future<List<ShippedOrder>> fetchShippedOrders() async {
+  Future<List<ShopeeOrder>> fetchShippedOrders() async {
     final url = Uri.parse("$baseUrl/orders/shipped");
     final response = await http.get(url, headers: {
       "Content-Type": "application/json",
@@ -261,7 +257,7 @@ class ShopeeController {
       final data = jsonDecode(response.body);
       if (data['success'] == true) {
         final ordersJson = data['data']['order_list'] as List;
-        return ordersJson.map((e) => ShippedOrder.fromJson(e)).toList();
+        return ordersJson.map((e) => ShopeeOrder.fromJson(e)).toList();
       } else {
         throw Exception(data['message'] ?? "Gagal mengambil data");
       }
@@ -306,14 +302,14 @@ class ShopeeController {
     }
   }
 
-  Future<List<ShippedOrder>> getShippedOrders() async {
+  Future<List<ShopeeOrder>> getShippedOrders() async {
     final response = await http.get(Uri.parse('$baseUrl/orders/shipped/full'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['success'] == true) {
         final List ordersJson = data['data'] ?? [];
-        return ordersJson.map((e) => ShippedOrder.fromJson(e)).toList();
+        return ordersJson.map((e) => ShopeeOrder.fromJson(e)).toList();
       } else {
         throw Exception(data['message'] ?? 'Gagal mengambil orders shipped');
       }

@@ -7,7 +7,7 @@ abstract class ShopeeOrdersEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// 🔹 Ambil daftar order pertama kali
+/// 🔹 Ambil daftar order pertama kali atau refresh
 class FetchShopeeOrders extends ShopeeOrdersEvent {
   final bool isRefresh;
 
@@ -34,4 +34,13 @@ class SelectShopeeOrder extends ShopeeOrdersEvent {
 /// 🔹 Hapus error dari state agar UI kembali normal
 class ClearShopeeOrdersError extends ShopeeOrdersEvent {}
 
+/// 🔹 Ganti status order yang ingin ditampilkan
+/// Bisa "READY_TO_SHIP" atau "PROCESSED"
+class ChangeShopeeOrderStatus extends ShopeeOrdersEvent {
+  final String status;
 
+  const ChangeShopeeOrderStatus(this.status);
+
+  @override
+  List<Object?> get props => [status];
+}

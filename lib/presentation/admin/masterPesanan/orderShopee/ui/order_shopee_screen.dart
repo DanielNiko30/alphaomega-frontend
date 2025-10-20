@@ -11,13 +11,32 @@ import '../bloc/order_shopee_state.dart';
 import '../../../../../widget/sidebar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-class ShopeeOrdersScreen extends StatelessWidget {
+class ShopeeOrdersScreen extends StatefulWidget {
   const ShopeeOrdersScreen({super.key});
 
   @override
+  State<ShopeeOrdersScreen> createState() => _ShopeeOrdersScreenState();
+}
+
+class _ShopeeOrdersScreenState extends State<ShopeeOrdersScreen> {
+  late final ShopeeOrdersBloc _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = ShopeeOrdersBloc()..add(FetchShopeeOrders());
+  }
+
+  @override
+  void dispose() {
+    _bloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ShopeeOrdersBloc()..add(FetchShopeeOrders()),
+    return BlocProvider.value(
+      value: _bloc,
       child: Scaffold(
         body: Stack(
           children: [
@@ -36,6 +55,44 @@ class ShopeeOrdersScreen extends StatelessWidget {
                               fontSize: 22, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 20),
+
+                        // Toggle Ready to Ship / Processed
+                        BlocBuilder<ShopeeOrdersBloc, ShopeeOrdersState>(
+                          builder: (context, state) {
+                            final bloc = context.read<ShopeeOrdersBloc>();
+                            final isProcessed =
+                                bloc.currentStatus == "PROCESSED";
+
+                            return Row(
+                              children: [
+                                ChoiceChip(
+                                  label: const Text("Ready to Ship"),
+                                  selected: !isProcessed,
+                                  onSelected: (v) {
+                                    if (isProcessed) {
+                                      bloc.add(ChangeShopeeOrderStatus(
+                                          "READY_TO_SHIP"));
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                ChoiceChip(
+                                  label: const Text("Processed"),
+                                  selected: isProcessed,
+                                  onSelected: (v) {
+                                    if (!isProcessed) {
+                                      bloc.add(
+                                          ChangeShopeeOrderStatus("PROCESSED"));
+                                    }
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Orders List
                         Expanded(
                           child:
                               BlocBuilder<ShopeeOrdersBloc, ShopeeOrdersState>(
@@ -45,17 +102,50 @@ class ShopeeOrdersScreen extends StatelessWidget {
                                     child: CircularProgressIndicator());
                               } else if (state is ShopeeOrdersLoaded) {
                                 final orders = state.orders;
+                                final isProcessed = context
+                                        .read<ShopeeOrdersBloc>()
+                                        .currentStatus ==
+                                    "PROCESSED";
+
+                                // Empty State dengan icon/sticker
                                 if (orders.isEmpty) {
-                                  return const Center(
-                                      child: Text("Belum ada order"));
+                                  return Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.inbox,
+                                          size: 80,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          "Belum ada order",
+                                          style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey.shade600),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          isProcessed
+                                              ? "Tidak ada order processed"
+                                              : "Tidak ada order ready to ship",
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade500),
+                                        ),
+                                      ],
+                                    ),
+                                  );
                                 }
 
+                                // List order
                                 return ListView.builder(
                                   itemCount: orders.length,
                                   itemBuilder: (context, index) {
                                     final order = orders[index];
-
-                                    // Aman: fallback jika items kosong
                                     final firstItem = order.items.isNotEmpty
                                         ? order.items.first
                                         : ShopeeOrderItem(
@@ -74,6 +164,11 @@ class ShopeeOrdersScreen extends StatelessWidget {
                                       decimalDigits: 0,
                                     ).format(firstItem.price);
 
+                                    final isProcessed = context
+                                            .read<ShopeeOrdersBloc>()
+                                            .currentStatus ==
+                                        "PROCESSED";
+
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 16),
                                       decoration: BoxDecoration(
@@ -85,7 +180,7 @@ class ShopeeOrdersScreen extends StatelessWidget {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Header dengan order SN
+                                          // Header order SN
                                           Container(
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 8, horizontal: 12),
@@ -97,29 +192,21 @@ class ShopeeOrdersScreen extends StatelessWidget {
                                                 topRight: Radius.circular(6),
                                               ),
                                             ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text(
-                                                  "No. Pesanan ${order.orderSn}",
-                                                  style: const TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.black54),
-                                                ),
-                                              ],
+                                            child: Text(
+                                              "No. Pesanan ${order.orderSn}",
+                                              style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.black54),
                                             ),
                                           ),
 
-                                          // Isi produk
+                                          // Produk
                                           Padding(
                                             padding: const EdgeInsets.all(12),
                                             child: Row(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                // Gambar produk dari URL atau placeholder
                                                 ClipRRect(
                                                   borderRadius:
                                                       BorderRadius.circular(4),
@@ -162,8 +249,6 @@ class ShopeeOrdersScreen extends StatelessWidget {
                                                         ),
                                                 ),
                                                 const SizedBox(width: 12),
-
-                                                // Detail produk
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -173,24 +258,21 @@ class ShopeeOrdersScreen extends StatelessWidget {
                                                       Text(
                                                         firstItem.name,
                                                         style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          fontSize: 14,
-                                                        ),
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            fontSize: 14),
                                                       ),
                                                       const SizedBox(height: 4),
                                                       Text(
                                                         "Variasi: ${firstItem.variationName}",
                                                         style: const TextStyle(
-                                                          fontSize: 12,
-                                                          color: Colors.black54,
-                                                        ),
+                                                            fontSize: 12,
+                                                            color:
+                                                                Colors.black54),
                                                       ),
                                                     ],
                                                   ),
                                                 ),
-
-                                                // Qty dan harga
                                                 Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.end,
@@ -209,130 +291,139 @@ class ShopeeOrdersScreen extends StatelessWidget {
                                               ],
                                             ),
                                           ),
-
                                           const Divider(height: 1),
 
-                                          // Footer
+                                          // Info pengiriman
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
-                                                vertical: 10, horizontal: 12),
-                                            child: Column(
+                                                vertical: 6, horizontal: 12),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
-                                                // Informasi status
                                                 Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
                                                   children: [
-                                                    Row(
-                                                      children: [
-                                                        Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 2,
-                                                                  horizontal:
-                                                                      6),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: Colors
-                                                                .red.shade100,
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        4),
-                                                          ),
-                                                          child: const Text(
-                                                            "Besok Batal",
-                                                            style: TextStyle(
+                                                    if (!isProcessed) ...[
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 2,
+                                                                horizontal: 6),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors
+                                                              .red.shade100,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(4),
+                                                        ),
+                                                        child: const Text(
+                                                          "Besok Batal",
+                                                          style: TextStyle(
                                                               fontSize: 11,
                                                               color: Colors.red,
                                                               fontWeight:
                                                                   FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
+                                                                      .bold),
                                                         ),
-                                                        const SizedBox(
-                                                            width: 8),
-                                                        const Text(
-                                                          "Perlu Dikirim",
-                                                          style: TextStyle(
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      const Text(
+                                                        "Perlu Dikirim",
+                                                        style: TextStyle(
                                                             fontSize: 12,
                                                             fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                    ]
+                                                  ],
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    Text(
+                                                      order.shippingMethod
+                                                              .isNotEmpty
+                                                          ? order.shippingMethod
+                                                          : "-",
+                                                      style: const TextStyle(
+                                                          fontSize: 12),
                                                     ),
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .end,
-                                                      children: [
-                                                        Text(
-                                                          order.shippingMethod
-                                                                  .isNotEmpty
-                                                              ? order
-                                                                  .shippingMethod
-                                                              : "Hemat Kargo",
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize: 12),
-                                                        ),
-                                                        const Text(
-                                                          "Drop off / Pickup",
-                                                          style: TextStyle(
-                                                              fontSize: 11,
-                                                              color: Colors
-                                                                  .black54),
-                                                        ),
-                                                      ],
+                                                    const Text(
+                                                      "Drop off / Pickup",
+                                                      style: TextStyle(
+                                                          fontSize: 11,
+                                                          color:
+                                                              Colors.black54),
                                                     ),
                                                   ],
                                                 ),
-                                                const SizedBox(height: 12),
+                                              ],
+                                            ),
+                                          ),
+                                          const Divider(height: 1),
 
-                                                // Tombol aksi
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.end,
-                                                  children: [
-                                                    OutlinedButton(
-                                                      onPressed: () {
-                                                        showDialog(
-                                                          context: context,
-                                                          builder: (ctx) =>
-                                                              BlocProvider(
-                                                            create: (_) =>
-                                                                PickupPopupBloc(
-                                                                    controller:
-                                                                        ShopeeController()),
-                                                            child: PickupPopupScreen(
-                                                                orderSn: order
-                                                                    .orderSn),
-                                                          ),
-                                                        );
-                                                      },
-                                                      child:
-                                                          const Text("Pickup"),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    ElevatedButton(
-                                                      onPressed: () {
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(
-                                                          SnackBar(
+                                          // Footer tombol sesuai status
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 10, horizontal: 12),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                if (!isProcessed) ...[
+                                                  OutlinedButton(
+                                                    onPressed: () {
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (ctx) =>
+                                                            BlocProvider(
+                                                          create: (_) =>
+                                                              PickupPopupBloc(
+                                                                  controller:
+                                                                      ShopeeController()),
+                                                          child:
+                                                              PickupPopupScreen(
+                                                                  orderSn: order
+                                                                      .orderSn),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: const Text("Pickup"),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                ] else ...[
+                                                  OutlinedButton(
+                                                    onPressed: () {
+                                                      ScaffoldMessenger.of(
+                                                              context)
+                                                          .showSnackBar(
+                                                        SnackBar(
                                                             content: Text(
-                                                                "Lihat detail untuk order ${order.orderSn}"),
-                                                          ),
-                                                        );
-                                                      },
-                                                      child: const Text(
-                                                          "Lihat Detail"),
-                                                    ),
-                                                  ],
+                                                                "Cetak resi order ${order.orderSn}")),
+                                                      );
+                                                    },
+                                                    child: const Text(
+                                                        "Print Resi"),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                ],
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                          content: Text(
+                                                              "Lihat detail untuk order ${order.orderSn}")),
+                                                    );
+                                                  },
+                                                  child: const Text(
+                                                      "Lihat Detail"),
                                                 ),
                                               ],
                                             ),

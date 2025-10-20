@@ -174,7 +174,7 @@ class ProductController {
     }
   }
 
-    static Future<bool> updateKategori(String idKategori, String namaBaru) async {
+  static Future<bool> updateKategori(String idKategori, String namaBaru) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/kategori/$idKategori'),
@@ -235,6 +235,29 @@ class ProductController {
       }
     } catch (e) {
       throw Exception("Terjadi kesalahan saat konversi stok: $e");
+    }
+  }
+
+  static Future<bool> deleteStok(String idStok) async {
+    try {
+      final response = await http.delete(
+        Uri.parse("$baseUrl/stok/$idStok"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ Stok $idStok berhasil di-nonaktifkan");
+        return true;
+      } else if (response.statusCode == 404) {
+        print("⚠️ Stok tidak ditemukan");
+        return false;
+      } else {
+        print("❌ Gagal delete stok: ${response.statusCode} | ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("⚠️ Error deleteStok: $e");
+      return false;
     }
   }
 

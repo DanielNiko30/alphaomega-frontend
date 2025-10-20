@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/presentation/admin/masterPesanan/orderLazada/bloc/order_lazada_event.dart';
+import 'package:frontend/presentation/admin/masterPesanan/orderLazada/ui/order_lazada_screen.dart';
 import 'package:frontend/presentation/pegawaiGudang/detailPesanan/bloc/detail_pesanan_event.dart';
 import 'package:frontend/presentation/pegawaiGudang/detailPesanan/ui/detail_pesanan_screen.dart';
 import 'package:frontend/presentation/pegawaiGudang/listBarangPesanan/ui/list_barang_pesanan_screen.dart';
@@ -33,6 +35,7 @@ import 'package:frontend/presentation/admin/masterBarang/addKategori/ui/add_kate
 
 import 'controller/user/user_controller.dart';
 import 'controller/admin/product_controller.dart';
+import 'presentation/admin/masterPesanan/orderLazada/bloc/order_lazada_bloc.dart';
 import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_bloc.dart';
 import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_event.dart';
 import 'presentation/admin/masterPesanan/orderShopee/ui/order_shopee_screen.dart';
@@ -169,6 +172,10 @@ class MyApp extends StatelessWidget {
         '/shopeeOrders': (context) => BlocProvider(
               create: (context) => ShopeeOrdersBloc()..add(FetchShopeeOrders()),
               child: const ShopeeOrdersScreen(),
+            ),
+        '/lazadaOrders': (context) => BlocProvider(
+              create: (context) => LazadaOrdersBloc()..add(FetchLazadaOrders()),
+              child: const LazadaOrdersScreen(),
             ),
       },
       home: const LoginScreen(),

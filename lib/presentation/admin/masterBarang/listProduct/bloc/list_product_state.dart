@@ -8,6 +8,9 @@ abstract class ListProductState extends Equatable {
   List<Object?> get props => [];
 }
 
+/// State awal sebelum ada aksi apapun
+class ProductInitial extends ListProductState {}
+
 /// State saat data produk sedang dimuat
 class ProductLoading extends ListProductState {}
 
@@ -41,10 +44,9 @@ class ProductError extends ListProductState {
   List<Object?> get props => [message];
 }
 
-/// State saat proses konversi stok sedang berlangsung
+/// ====== KONVERSI STOK ======
 class KonversiStokLoading extends ListProductState {}
 
-/// State ketika konversi stok berhasil dilakukan
 class KonversiStokSuccess extends ListProductState {
   final String message;
 
@@ -54,11 +56,31 @@ class KonversiStokSuccess extends ListProductState {
   List<Object?> get props => [message];
 }
 
-/// State jika proses konversi stok gagal
 class KonversiStokFailed extends ListProductState {
   final String message;
 
   KonversiStokFailed(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// ====== UPDATE PRODUK ======
+class UpdateProductLoading extends ListProductState {}
+
+class UpdateProductSuccess extends ListProductState {
+  final String message;
+
+  UpdateProductSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class UpdateProductFailed extends ListProductState {
+  final String message;
+
+  UpdateProductFailed(this.message);
 
   @override
   List<Object?> get props => [message];

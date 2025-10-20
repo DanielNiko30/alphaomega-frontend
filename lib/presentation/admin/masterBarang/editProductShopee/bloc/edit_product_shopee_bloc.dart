@@ -19,47 +19,51 @@ class EditProductShopeeBloc
     on<SubmitEditShopeeProduct>(_onSubmitEditShopeeProduct);
   }
 
-  /// Fetch detail produk Shopee + category + logistic
-  Future<void> _onFetchShopeeProductDetail(
-    FetchShopeeProductDetail event,
-    Emitter<EditProductShopeeState> emit,
-  ) async {
+  /// 🔹 Fetch semua data: product info + categories + logistics
+  Future<void> _onFetchShopeeProductDetail(FetchShopeeProductDetail event,
+      Emitter<EditProductShopeeState> emit) async {
     emit(EditProductShopeeLoading());
     try {
-      final ShopeeProductInfo product =
-          await ShopeeController.getShopeeProductInfo(
+      // 1️⃣ Ambil detail produk Shopee
+      final product = await ShopeeController.getShopeeProductInfo(
         idProduct: event.idProduct,
         satuan: event.satuan,
       );
 
-      // Debug log untuk verifikasi
-      print("=== DEBUG: Product data from backend ===");
-      print(product);
-
+      // 2️⃣ Ambil kategori & logistik langsung dari Shopee
       final categories = await ShopeeController.getCategories();
       final logistics = await ShopeeController.getLogistics();
+      print("✅ Logistics fetched: ${logistics.map((l) => l.name).toList()}");
 
-      // Debug log data kategori & logistic
-      print("=== DEBUG: Selected Category & Logistic ===");
-      print("Categories: $categories");
-      print("Logistics: $logistics");
+      // 3️⃣ Tentukan kategori yang sesuai
+      final selectedCategory = categories.firstWhere(
+        (c) => c.categoryId.toString() == product.categoryId,
+        orElse: () => categories.first,
+      );
 
+      // 4️⃣ Pilih logistic aktif pertama
+      final selectedLogistic = logistics.isNotEmpty ? logistics.first : null;
+
+      // 5️⃣ Emit state lengkap
       emit(EditProductShopeeLoaded(
+        idProduct: event.idProduct,
+        itemId: event.itemId,
         product: product,
-        selectedSatuan: event.satuan, // langsung String
+        selectedSatuan: event.satuan,
         categories: categories,
-        selectedCategory: categories.isNotEmpty ? categories.first : null,
+        selectedCategory: selectedCategory,
         logistics: logistics,
-        selectedLogistic: logistics.isNotEmpty ? logistics.first : null,
+        selectedLogistic: selectedLogistic,
+        brandName: product.brandName,
       ));
     } catch (e, st) {
-      print("ERROR FetchShopeeProductDetail: $e\n$st");
       emit(EditProductShopeeFailure(
-          message: "Gagal memuat detail produk: ${e.toString()}"));
+        message: "Gagal memuat detail produk: ${e.toString()}",
+      ));
+      print("❌ ERROR _onFetchShopeeProductDetail: $e\n$st");
     }
   }
 
-  /// Select satuan
   void _onSelectSatuanShopee(
       SelectSatuanShopee event, Emitter<EditProductShopeeState> emit) {
     if (state is EditProductShopeeLoaded) {
@@ -68,7 +72,6 @@ class EditProductShopeeBloc
     }
   }
 
-  /// Select category
   void _onSelectCategoryShopee(
       SelectCategoryShopee event, Emitter<EditProductShopeeState> emit) {
     if (state is EditProductShopeeLoaded) {
@@ -77,7 +80,6 @@ class EditProductShopeeBloc
     }
   }
 
-  /// Select logistic
   void _onSelectLogisticShopee(
       SelectLogisticShopee event, Emitter<EditProductShopeeState> emit) {
     if (state is EditProductShopeeLoaded) {
@@ -86,35 +88,30 @@ class EditProductShopeeBloc
     }
   }
 
-  /// Submit edit produk Shopee
-  Future<void> _onSubmitEditShopeeProduct(
-    SubmitEditShopeeProduct event,
-    Emitter<EditProductShopeeState> emit,
-  ) async {
+  /// 🔹 Submit edit produk
+  Future<void> _onSubmitEditShopeeProduct(SubmitEditShopeeProduct event,
+      Emitter<EditProductShopeeState> emit) async {
     if (state is! EditProductShopeeLoaded) return;
-
     final current = state as EditProductShopeeLoaded;
 
-    // Validasi
     if (current.selectedSatuan == null ||
         current.selectedCategory == null ||
         current.selectedLogistic == null) {
       emit(EditProductShopeeFailure(
-          message: "Satuan, kategori, dan logistic harus dipilih"));
+        message: "Satuan, kategori, dan logistic harus dipilih",
+      ));
       return;
     }
 
     emit(EditProductShopeeSaving());
 
     try {
-      // Pilih maskChannelId jika ada
       final logisticIdToSubmit = current.selectedLogistic!.maskChannelId != 0
           ? current.selectedLogistic!.maskChannelId
           : current.selectedLogistic!.id;
 
-      // Kirim request ke controller
       final response = await ShopeeController.editShopeeProduct(
-        itemId: event.itemId, // sekarang String
+        itemId: current.itemId,
         itemSku: event.itemSku,
         weight: event.weight,
         categoryId: current.selectedCategory!.categoryId,
@@ -124,13 +121,15 @@ class EditProductShopeeBloc
         condition: event.condition,
         selectedUnit: current.selectedSatuan!,
         logisticId: logisticIdToSubmit,
+        brandName: current.brandName,
       );
 
       emit(EditProductShopeeSuccess(data: response));
     } catch (e, st) {
-      print("ERROR SubmitEditShopeeProduct: $e\n$st");
+      print("❌ ERROR _onSubmitEditShopeeProduct: $e\n$st");
       emit(EditProductShopeeFailure(
-          message: "Gagal edit produk Shopee: ${e.toString()}"));
+        message: "Gagal edit produk Shopee: ${e.toString()}",
+      ));
     }
   }
 }

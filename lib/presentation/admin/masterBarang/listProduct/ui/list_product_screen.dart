@@ -199,22 +199,38 @@ class ProductGrid extends StatelessWidget {
   const ProductGrid({super.key, required this.searchQuery, required this.role});
 
   @override
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<ListProductBloc, ListProductState>(
       builder: (context, state) {
-        if (state is ProductLoading) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (state is ProductWithStokLoaded) {
+        // === Saat loading, tampilkan spinner ===
+        if (state is ProductInitial ||
+            state is ProductLoading ||
+            state is KonversiStokLoading) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        // === Saat data produk dengan stok berhasil dimuat ===
+        else if (state is ProductWithStokLoaded) {
           final filtered = state.products
               .where((p) =>
                   p.namaProduct.toLowerCase().contains(searchQuery) ||
                   p.productKategori.toLowerCase().contains(searchQuery))
               .toList();
 
+          // Jika hasil pencarian kosong
           if (filtered.isEmpty) {
-            return const Center(child: Text("Produk tidak ditemukan"));
+            return const Center(
+              child: Text(
+                "Produk tidak ditemukan",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            );
           }
 
+          // Responsif berdasarkan lebar layar
           final screenWidth = MediaQuery.of(context).size.width;
           int crossAxisCount = 6;
           if (screenWidth < 1600) crossAxisCount = 5;
@@ -236,10 +252,24 @@ class ProductGrid extends StatelessWidget {
               return _buildProductCard(context, product);
             },
           );
-        } else if (state is ProductError) {
-          return Center(child: Text(state.message));
-        } else {
-          return const Center(child: Text("Tidak ada data"));
+        }
+
+        // === Saat error ===
+        else if (state is ProductError) {
+          return Center(
+            child: Text(
+              state.message,
+              style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+            ),
+          );
+        }
+
+        // === Default (misalnya belum fetch) ===
+        else {
+          return const Center(
+            child:
+                CircularProgressIndicator(), // biar ga langsung “tidak ada data”
+          );
         }
       },
     );

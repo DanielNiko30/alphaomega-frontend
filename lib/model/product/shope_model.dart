@@ -1,17 +1,25 @@
 class ShopeeCategory {
   final int categoryId;
   final String categoryName;
+  final int? parentCategoryId; // tetap sesuai permintaanmu
+  final List<ShopeeCategory> children;
 
   ShopeeCategory({
     required this.categoryId,
     required this.categoryName,
+    this.parentCategoryId,
+    this.children = const [],
   });
 
   factory ShopeeCategory.fromJson(Map<String, dynamic> json) {
     return ShopeeCategory(
       categoryId: json['category_id'] ?? 0,
-      categoryName:
-          json['display_category_name'] ?? 'Unknown', // default string
+      categoryName: json['display_category_name'] ?? '', // ambil dari field ini
+      parentCategoryId: json['parent_category_id'], // ambil dari field ini
+      children: (json['children'] as List<dynamic>?)
+              ?.map((e) => ShopeeCategory.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 }

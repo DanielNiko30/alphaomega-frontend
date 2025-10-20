@@ -3,13 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
+import '../../../../../controller/admin/lazada_controller.dart';
 import '../../../../../controller/admin/product_controller.dart';
 import '../../../../../widget/sidebar.dart';
 import '../../../../../model/product/stok_model.dart';
 import '../../../../../model/product/update_product_model.dart';
 import '../../../../../model/product/kategori_model.dart';
+import '../../addProductLazada/bloc/add_product_lazada_bloc.dart';
+import '../../addProductLazada/ui/add_product_lazada_screen.dart';
 import '../../addProductShopee/bloc/add_product_shopee_bloc.dart';
 import '../../addProductShopee/ui/add_product_shopee_screen.dart';
+import '../../editProductLazada/bloc/edit_product_lazada_bloc.dart';
+import '../../editProductLazada/ui/edit_product_lazada_screen.dart';
 import '../../editProductShopee/bloc/edit_product_shopee_bloc.dart';
 import '../../editProductShopee/ui/edit_product_shopee_screen.dart';
 import '../bloc/edit_product_bloc.dart';
@@ -27,6 +32,45 @@ class EditProductScreen extends StatefulWidget {
 
 class _EditProductScreenState extends State<EditProductScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  List<StokProduct> parseStokList(dynamic stokList) {
+    if (stokList == null) return [];
+
+    if (stokList is List<StokProduct>) return stokList;
+
+    if (stokList is List) {
+      return stokList
+          .map((e) {
+            // Sudah StokProduct
+            if (e is StokProduct) return e;
+
+            // Kalau Map<String, dynamic>
+            if (e is Map<String, dynamic>) return StokProduct.fromJson(e);
+
+            // Kalau JSObject/JSArray (web)
+            try {
+              final dyn = e as dynamic;
+              final idStok = dyn.idStok ?? dyn.id_stok ?? '';
+              final satuan = dyn.satuan ?? '';
+              final jumlah = int.tryParse((dyn.jumlah ?? 0).toString()) ?? 0;
+              final harga = int.tryParse((dyn.harga ?? 0).toString()) ?? 0;
+
+              return StokProduct(
+                idStok: idStok,
+                satuan: satuan,
+                jumlah: jumlah,
+                harga: harga,
+              );
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<StokProduct>()
+          .toList();
+    }
+
+    return [];
+  }
 
   final TextEditingController namaController = TextEditingController();
   final TextEditingController deskripsiController = TextEditingController();
@@ -100,7 +144,36 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
     final satuanList = satuanControllers.map((c) => c.text).toList();
     final hargaList = hargaControllers.map((c) => c.text).toList();
-    final stokList = stokControllers.map((c) => c.text).toList();
+    final jumlahList = stokControllers.map((c) => c.text).toList();
+
+    // Ambil stok lama dari Bloc
+    final currentState = context.read<EditProductBloc>().state;
+    List<StokProduct> oldStokList = [];
+    if (currentState is EditProductLoaded) {
+      oldStokList = parseStokList(currentState.product.stokList);
+    } else if (currentState is EditProductUpdated) {
+      oldStokList = currentState.updatedProduct.stokList ?? [];
+    } else if (currentState is EditProductSavedOnly) {
+      oldStokList = currentState.savedProduct.stokList ?? [];
+    }
+
+    final oldStokMap = {for (var s in oldStokList) s.satuan: s};
+
+    // Generate stok baru
+    final updatedStokList = List.generate(satuanList.length, (index) {
+      final satuan = satuanList[index];
+      final oldStok = oldStokMap[satuan];
+
+      return StokProduct(
+        idStok: oldStok?.idStok, // tetap pakai idStok lama jika ada
+        satuan: satuan,
+        harga: int.tryParse(hargaList[index]) ?? 0,
+        jumlah: int.tryParse(jumlahList[index]) ?? 0,
+        // stok lama tetap bawa ID Shopee/Lazada, stok baru null
+        idProductShopee: oldStok?.idProductShopee,
+        idProductLazada: oldStok?.idProductLazada,
+      );
+    });
 
     final updatedProduct = UpdateProduct(
       idProduct: widget.productId,
@@ -108,15 +181,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       namaProduct: namaController.text,
       gambarProduct: fileName ?? existingImageUrl,
       deskripsiProduct: deskripsiController.text,
-      stokList: List.generate(satuanList.length, (index) {
-        final stok = StokProduct(
-          idStok: "",
-          satuan: satuanList[index],
-          harga: int.tryParse(hargaList[index]) ?? 0,
-          jumlah: int.tryParse(stokList[index]) ?? 0,
-        );
-        return stok;
-      }),
+      stokList: updatedStokList,
     );
 
     Uint8List? imageToSend = kIsWeb ? _imageBytes : _image?.readAsBytesSync();
@@ -132,7 +197,34 @@ class _EditProductScreenState extends State<EditProductScreen> {
   void _saveOnlyProduct() {
     final satuanList = satuanControllers.map((c) => c.text).toList();
     final hargaList = hargaControllers.map((c) => c.text).toList();
-    final stokList = stokControllers.map((c) => c.text).toList();
+    final jumlahList = stokControllers.map((c) => c.text).toList();
+
+    final currentState = context.read<EditProductBloc>().state;
+    List<StokProduct> oldStokList = [];
+    if (currentState is EditProductLoaded) {
+      oldStokList = parseStokList(currentState.product.stokList);
+    } else if (currentState is EditProductUpdated) {
+      oldStokList = currentState.updatedProduct.stokList ?? [];
+    } else if (currentState is EditProductSavedOnly) {
+      oldStokList = currentState.savedProduct.stokList ?? [];
+    }
+
+    final oldStokMap = {for (var s in oldStokList) s.satuan: s};
+
+    final updatedStokList = List.generate(satuanList.length, (index) {
+      final satuan = satuanList[index];
+      final oldStok = oldStokMap[satuan];
+
+      return StokProduct(
+        idStok: oldStok?.idStok, // tetap pakai idStok lama jika ada
+        satuan: satuan,
+        harga: int.tryParse(hargaList[index]) ?? 0,
+        jumlah: int.tryParse(jumlahList[index]) ?? 0,
+        // stok lama tetap bawa ID Shopee/Lazada, stok baru null
+        idProductShopee: oldStok?.idProductShopee,
+        idProductLazada: oldStok?.idProductLazada,
+      );
+    });
 
     final updatedProduct = UpdateProduct(
       idProduct: widget.productId,
@@ -140,14 +232,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       namaProduct: namaController.text,
       gambarProduct: fileName ?? existingImageUrl,
       deskripsiProduct: deskripsiController.text,
-      stokList: List.generate(satuanList.length, (index) {
-        return StokProduct(
-          idStok: "",
-          satuan: satuanList[index],
-          harga: int.tryParse(hargaList[index]) ?? 0,
-          jumlah: int.tryParse(stokList[index]) ?? 0,
-        );
-      }),
+      stokList: updatedStokList,
     );
 
     Uint8List? imageToSend = kIsWeb ? _imageBytes : _image?.readAsBytesSync();
@@ -226,13 +311,25 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                     text: stok.harga.toString()));
                               }
                             }
+                            final stokList = product.stokList;
+                            final totalSatuan = stokList.length;
+                            final jumlahShopee = stokList
+                                .where((s) =>
+                                    s.idProductShopee != null &&
+                                    s.idProductShopee!.trim().isNotEmpty)
+                                .length;
+                            final semuaSudahShopee =
+                                jumlahShopee == totalSatuan;
+                            final adaShopee = jumlahShopee > 0;
 
-                            hasShopeeSatuan = product.stokList.any(
-                              (stok) =>
-                                  stok.idProductShopee != null &&
-                                  stok.idProductShopee!.trim().isNotEmpty,
-                            );
-
+                            final jumlahLazada = stokList
+                                .where((s) =>
+                                    s.idProductLazada != null &&
+                                    s.idProductLazada!.trim().isNotEmpty)
+                                .length;
+                            final semuaSudahLazada =
+                                jumlahLazada == totalSatuan;
+                            final adaLazada = jumlahLazada > 0;
                             return Form(
                               key: _formKey,
                               child: ListView(
@@ -244,7 +341,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                         fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 24),
-                                  // Foto Produk
                                   const Text(
                                     "Foto Produk *",
                                     style:
@@ -279,12 +375,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                                           BorderRadius.circular(
                                                               12),
                                                       child: AspectRatio(
-                                                        aspectRatio:
-                                                            1, // biar persegi dan proporsional
+                                                        aspectRatio: 1,
                                                         child: Image.network(
                                                           existingImageUrl!,
-                                                          fit: BoxFit
-                                                              .contain, // penting: biar gambar gak ketarik atau ke-zoom
+                                                          fit: BoxFit.contain,
                                                           width:
                                                               double.infinity,
                                                           height:
@@ -292,7 +386,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                                           errorBuilder: (context,
                                                                   error,
                                                                   stackTrace) =>
-                                                              Icon(Icons
+                                                              const Icon(Icons
                                                                   .broken_image),
                                                         ),
                                                       ),
@@ -321,8 +415,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-
-                                  // Nama
                                   TextFormField(
                                     controller: namaController,
                                     decoration: InputDecoration(
@@ -336,8 +428,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                         : null,
                                   ),
                                   const SizedBox(height: 16),
-
-                                  // Kategori
                                   DropdownButtonFormField<String>(
                                     value: selectedKategori,
                                     decoration: InputDecoration(
@@ -356,8 +446,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                         setState(() => selectedKategori = val),
                                   ),
                                   const SizedBox(height: 16),
-
-                                  // Deskripsi
                                   TextFormField(
                                     controller: deskripsiController,
                                     maxLines: 5,
@@ -370,8 +458,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-
-                                  // Tombol tambah satuan
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -389,239 +475,571 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-
-                                  // Card list satuan
                                   Column(
                                     children: List.generate(
                                       satuanControllers.length,
-                                      (index) => Card(
-                                        elevation: 2,
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 6),
-                                        shape: RoundedRectangleBorder(
+                                      (index) {
+                                        final stok =
+                                            index < product.stokList.length
+                                                ? product.stokList[index]
+                                                : null; // null artinya baru
+
+                                        return Card(
+                                          elevation: 2,
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 6),
+                                          shape: RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(12)),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                flex: 2,
-                                                child: TextFormField(
-                                                  controller:
-                                                      satuanControllers[index],
-                                                  decoration:
-                                                      const InputDecoration(
-                                                          labelText: "Satuan"),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                flex: 1,
-                                                child: TextFormField(
-                                                  controller:
-                                                      stokControllers[index],
-                                                  decoration:
-                                                      const InputDecoration(
-                                                          labelText: "Stok"),
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                flex: 2,
-                                                child: TextFormField(
-                                                  controller:
-                                                      hargaControllers[index],
-                                                  decoration:
-                                                      const InputDecoration(
-                                                          labelText: "Harga"),
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                ),
-                                              ),
-                                            ],
+                                                BorderRadius.circular(12),
                                           ),
-                                        ),
-                                      ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: TextFormField(
+                                                    controller:
+                                                        satuanControllers[
+                                                            index],
+                                                    decoration:
+                                                        const InputDecoration(
+                                                            labelText:
+                                                                "Satuan"),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  flex: 1,
+                                                  child: TextFormField(
+                                                    controller:
+                                                        stokControllers[index],
+                                                    decoration:
+                                                        const InputDecoration(
+                                                            labelText: "Stok"),
+                                                    keyboardType:
+                                                        TextInputType.number,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: TextFormField(
+                                                    controller:
+                                                        hargaControllers[index],
+                                                    decoration:
+                                                        const InputDecoration(
+                                                            labelText: "Harga"),
+                                                    keyboardType:
+                                                        TextInputType.number,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete,
+                                                      color: Colors.red),
+                                                  onPressed: () async {
+                                                    if (stok != null &&
+                                                        stok.idStok != null) {
+                                                      // Jika stok sudah ada di DB
+                                                      bool success =
+                                                          await ProductController
+                                                              .deleteStok(
+                                                                  stok.idStok!);
+                                                      if (success) {
+                                                        setState(() {
+                                                          satuanControllers
+                                                              .removeAt(index);
+                                                          stokControllers
+                                                              .removeAt(index);
+                                                          hargaControllers
+                                                              .removeAt(index);
+                                                        });
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          const SnackBar(
+                                                              content: Text(
+                                                                  "Stok berhasil dihapus")),
+                                                        );
+                                                      } else {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          const SnackBar(
+                                                              content: Text(
+                                                                  "Gagal menghapus stok")),
+                                                        );
+                                                      }
+                                                    } else {
+                                                      // Jika stok baru (belum ada di DB)
+                                                      setState(() {
+                                                        satuanControllers
+                                                            .removeAt(index);
+                                                        stokControllers
+                                                            .removeAt(index);
+                                                        hargaControllers
+                                                            .removeAt(index);
+                                                      });
+                                                    }
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-
-                                  // Tombol aksi bawah
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
-                                      ElevatedButton.icon(
-                                        onPressed: _saveOnlyProduct,
-                                        icon: const Icon(Icons.save_alt),
-                                        label: const Text("Save Only"),
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.orange),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          ElevatedButton.icon(
+                                            onPressed: _saveOnlyProduct,
+                                            icon: const Icon(Icons.save_alt),
+                                            label: const Text("Save Only"),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.grey.shade200,
+                                              foregroundColor: Colors.black87,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 20,
+                                                      vertical: 12),
+                                            ),
+                                          ),
+                                          ElevatedButton.icon(
+                                            onPressed: _updateProduct,
+                                            icon:
+                                                const Icon(Icons.check_circle),
+                                            label:
+                                                const Text("Simpan Perubahan"),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.green.shade600,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 12),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      ElevatedButton.icon(
-                                        onPressed: () {
-                                          if (!hasShopeeSatuan) {
-                                            showDialog(
-                                              context: context,
-                                              builder: (_) => BlocProvider(
-                                                create: (context) =>
-                                                    AddProductShopeeBloc(
-                                                  productController:
-                                                      ProductController(),
-                                                ),
-                                                child: Dialog(
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                  ),
-                                                  child: SizedBox(
-                                                    width: 600,
-                                                    height: 500,
-                                                    child:
-                                                        AddProductShopeeScreen(
-                                                      productId:
-                                                          widget.productId,
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        alignment: WrapAlignment.center,
+                                        spacing: 12,
+                                        runSpacing: 8,
+                                        children: [
+                                          // === SHOPEE ADD ===
+                                          if (!semuaSudahShopee)
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (_) => BlocProvider(
+                                                    create: (context) =>
+                                                        AddProductShopeeBloc(
+                                                      productController:
+                                                          ProductController(),
+                                                    ),
+                                                    child: Dialog(
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                      child: SizedBox(
+                                                        width: 600,
+                                                        height: 500,
+                                                        child:
+                                                            AddProductShopeeScreen(
+                                                                productId: widget
+                                                                    .productId),
+                                                      ),
                                                     ),
                                                   ),
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                  Icons.add_business,
+                                                  color: Colors.orange),
+                                              label: const Text("Add Shopee"),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white,
+                                                foregroundColor: Colors.black87,
+                                                side: const BorderSide(
+                                                    color: Colors.orange),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                 ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 18,
+                                                        vertical: 10),
                                               ),
-                                            );
-                                          } else {
-                                            final filteredSatuan = state
-                                                .product.stokList
-                                                .where((stok) =>
-                                                    stok.idProductShopee !=
-                                                        null &&
-                                                    stok.idProductShopee!
-                                                        .trim()
-                                                        .isNotEmpty)
-                                                .toList();
+                                            ),
 
-                                            if (filteredSatuan.isEmpty) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                    content: Text(
-                                                        "Tidak ada satuan yang terhubung ke Shopee")),
-                                              );
-                                              return;
-                                            }
+                                          // === SHOPEE EDIT ===
+                                          if (adaShopee)
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                final filteredSatuan = stokList
+                                                    .where((stok) =>
+                                                        stok.idProductShopee !=
+                                                            null &&
+                                                        stok.idProductShopee!
+                                                            .trim()
+                                                            .isNotEmpty)
+                                                    .toList();
 
-                                            String? selectedSatuan;
-                                            showDialog(
-                                              context: context,
-                                              builder: (context) {
-                                                return StatefulBuilder(
-                                                  builder: (context, setState) {
-                                                    return AlertDialog(
-                                                      title: const Text(
-                                                          "Pilih Satuan Shopee"),
-                                                      content:
-                                                          DropdownButtonFormField<
-                                                              String>(
-                                                        value: selectedSatuan,
-                                                        decoration:
-                                                            const InputDecoration(
-                                                                labelText:
-                                                                    "Satuan"),
-                                                        items: filteredSatuan
-                                                            .map((stok) =>
-                                                                DropdownMenuItem<
-                                                                    String>(
-                                                                  value: stok
-                                                                      .satuan,
-                                                                  child: Text(
-                                                                      "${stok.satuan} (Stok: ${stok.jumlah}, Harga: ${stok.harga})"),
-                                                                ))
-                                                            .toList(),
-                                                        onChanged: (val) =>
-                                                            setState(() =>
-                                                                selectedSatuan =
-                                                                    val),
-                                                      ),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () =>
-                                                              Navigator.pop(
-                                                                  context),
-                                                          child: const Text(
-                                                              "Batal"),
-                                                        ),
-                                                        ElevatedButton(
-                                                          onPressed: () {
-                                                            if (selectedSatuan ==
-                                                                null) {
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .showSnackBar(
-                                                                const SnackBar(
-                                                                    content: Text(
-                                                                        "Pilih satuan terlebih dahulu")),
-                                                              );
-                                                              return;
-                                                            }
-                                                            Navigator.pop(
-                                                                context);
-                                                            showDialog(
-                                                              context: context,
-                                                              builder: (_) =>
-                                                                  BlocProvider(
-                                                                create: (context) =>
-                                                                    EditProductShopeeBloc(
-                                                                  productController:
-                                                                      ProductController(),
-                                                                ),
-                                                                child: Dialog(
-                                                                  shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              12)),
-                                                                  child:
-                                                                      SizedBox(
-                                                                    width: 600,
-                                                                    height: 500,
+                                                String? selectedSatuan;
+
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    return StatefulBuilder(
+                                                      builder:
+                                                          (context, setState) {
+                                                        return AlertDialog(
+                                                          title: const Text(
+                                                              "Pilih Satuan Shopee"),
+                                                          content:
+                                                              DropdownButtonFormField<
+                                                                  String>(
+                                                            value:
+                                                                selectedSatuan,
+                                                            decoration:
+                                                                const InputDecoration(
+                                                                    labelText:
+                                                                        "Satuan"),
+                                                            items:
+                                                                filteredSatuan
+                                                                    .map(
+                                                                      (stok) =>
+                                                                          DropdownMenuItem<
+                                                                              String>(
+                                                                        value: stok
+                                                                            .satuan,
+                                                                        child: Text(
+                                                                            "${stok.satuan} (Stok: ${stok.jumlah}, Harga: ${stok.harga})"),
+                                                                      ),
+                                                                    )
+                                                                    .toList(),
+                                                            onChanged: (val) =>
+                                                                setState(() =>
+                                                                    selectedSatuan =
+                                                                        val),
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () =>
+                                                                  Navigator.pop(
+                                                                      context),
+                                                              child: const Text(
+                                                                  "Batal"),
+                                                            ),
+                                                            ElevatedButton(
+                                                              onPressed: () {
+                                                                if (selectedSatuan ==
+                                                                    null) {
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    const SnackBar(
+                                                                      content: Text(
+                                                                          "Pilih satuan terlebih dahulu"),
+                                                                    ),
+                                                                  );
+                                                                  return;
+                                                                }
+                                                                Navigator.pop(
+                                                                    context);
+                                                                showDialog(
+                                                                  context:
+                                                                      context,
+                                                                  builder: (_) =>
+                                                                      BlocProvider(
+                                                                    create: (context) =>
+                                                                        EditProductShopeeBloc(
+                                                                      productController:
+                                                                          ProductController(),
+                                                                    ),
                                                                     child:
-                                                                        EditProductShopeeScreen(
-                                                                      idProduct:
-                                                                          widget
-                                                                              .productId,
-                                                                      satuan:
-                                                                          selectedSatuan!,
+                                                                        Dialog(
+                                                                      shape:
+                                                                          RoundedRectangleBorder(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(12),
+                                                                      ),
+                                                                      child:
+                                                                          SizedBox(
+                                                                        width:
+                                                                            600,
+                                                                        height:
+                                                                            500,
+                                                                        child:
+                                                                            EditProductShopeeScreen(
+                                                                          idProduct:
+                                                                              widget.productId, // 🟢 id dari DB lokal
+                                                                          itemId: filteredSatuan
+                                                                              .firstWhere((s) => s.satuan == selectedSatuan)
+                                                                              .idProductShopee!, // 🟢 id Shopee dari stok
+                                                                          satuan:
+                                                                              selectedSatuan!,
+                                                                        ),
+                                                                      ),
                                                                     ),
                                                                   ),
-                                                                ),
-                                                              ),
-                                                            );
-                                                          },
-                                                          child:
-                                                              const Text("OK"),
-                                                        ),
-                                                      ],
+                                                                );
+                                                              },
+                                                              child: const Text(
+                                                                  "OK"),
+                                                            ),
+                                                          ],
+                                                        );
+                                                      },
                                                     );
                                                   },
                                                 );
                                               },
-                                            );
-                                          }
-                                        },
-                                        icon: const Icon(Icons.storefront),
-                                        label: Text(hasShopeeSatuan
-                                            ? "Edit Shopee"
-                                            : "Add Product to Shopee"),
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue),
-                                      ),
-                                      ElevatedButton.icon(
-                                        onPressed: _updateProduct,
-                                        icon: const Icon(Icons.check_circle),
-                                        label: const Text("Simpan Perubahan"),
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                Colors.green.shade600),
+                                              icon: const Icon(Icons.storefront,
+                                                  color: Colors.orange),
+                                              label: const Text("Edit Shopee"),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white,
+                                                foregroundColor: Colors.black87,
+                                                side: const BorderSide(
+                                                    color: Colors.orange),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 18,
+                                                        vertical: 10),
+                                              ),
+                                            ),
+
+                                          // === LAZADA ADD ===
+                                          if (!semuaSudahLazada)
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (_) => BlocProvider(
+                                                    create: (context) =>
+                                                        AddProductLazadaBloc(
+                                                      productController:
+                                                          ProductController(),
+                                                      lazadaController:
+                                                          LazadaController(),
+                                                    ),
+                                                    child: Dialog(
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                      child: SizedBox(
+                                                        width: 600,
+                                                        height: 500,
+                                                        child:
+                                                            AddProductLazadaScreen(
+                                                                productId: widget
+                                                                    .productId),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                  Icons.add_business_outlined,
+                                                  color: Colors.purple),
+                                              label: const Text("Add Lazada"),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white,
+                                                foregroundColor: Colors.black87,
+                                                side: const BorderSide(
+                                                    color: Colors.purple),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 18,
+                                                        vertical: 10),
+                                              ),
+                                            ),
+
+                                          if (adaLazada)
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                final filteredLazada = stokList
+                                                    .where((stok) =>
+                                                        stok.idProductLazada !=
+                                                            null &&
+                                                        stok.idProductLazada!
+                                                            .trim()
+                                                            .isNotEmpty)
+                                                    .toList();
+
+                                                String? selectedSatuan;
+
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    return StatefulBuilder(
+                                                      builder:
+                                                          (context, setState) {
+                                                        return AlertDialog(
+                                                          title: const Text(
+                                                              "Pilih Satuan Lazada"),
+                                                          content:
+                                                              DropdownButtonFormField<
+                                                                  String>(
+                                                            value:
+                                                                selectedSatuan,
+                                                            decoration:
+                                                                const InputDecoration(
+                                                                    labelText:
+                                                                        "Satuan"),
+                                                            items:
+                                                                filteredLazada
+                                                                    .map(
+                                                                      (stok) =>
+                                                                          DropdownMenuItem<
+                                                                              String>(
+                                                                        value: stok
+                                                                            .satuan,
+                                                                        child: Text(
+                                                                            "${stok.satuan} (Stok: ${stok.jumlah}, Harga: ${stok.harga})"),
+                                                                      ),
+                                                                    )
+                                                                    .toList(),
+                                                            onChanged: (val) =>
+                                                                setState(() =>
+                                                                    selectedSatuan =
+                                                                        val),
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () =>
+                                                                  Navigator.pop(
+                                                                      context),
+                                                              child: const Text(
+                                                                  "Batal"),
+                                                            ),
+                                                            ElevatedButton(
+                                                              onPressed: () {
+                                                                if (selectedSatuan ==
+                                                                    null) {
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    const SnackBar(
+                                                                      content: Text(
+                                                                          "Pilih satuan terlebih dahulu"),
+                                                                    ),
+                                                                  );
+                                                                  return;
+                                                                }
+
+                                                                Navigator.pop(
+                                                                    context);
+
+                                                                showDialog(
+                                                                  context:
+                                                                      context,
+                                                                  builder: (_) =>
+                                                                      BlocProvider(
+                                                                    create: (context) =>
+                                                                        EditProductLazadaBloc(
+                                                                      productController:
+                                                                          ProductController(),
+                                                                      lazadaController:
+                                                                          LazadaController(),
+                                                                    ),
+                                                                    child:
+                                                                        Dialog(
+                                                                      shape:
+                                                                          RoundedRectangleBorder(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(12),
+                                                                      ),
+                                                                      child:
+                                                                          SizedBox(
+                                                                        width:
+                                                                            600,
+                                                                        height:
+                                                                            500,
+                                                                        child:
+                                                                            EditProductLazadaScreen(
+                                                                          productId:
+                                                                              widget.productId, // 🟢 id dari DB lokal
+                                                                          itemId: filteredLazada
+                                                                              .firstWhere((s) => s.satuan == selectedSatuan)
+                                                                              .idProductLazada!, // 🟣 id Lazada dari stok
+                                                                          satuan:
+                                                                              selectedSatuan!, // biar bisa load data sesuai satuan
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                              },
+                                                              child: const Text(
+                                                                  "OK"),
+                                                            ),
+                                                          ],
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                Icons
+                                                    .store_mall_directory_outlined,
+                                                color: Colors.purple,
+                                              ),
+                                              label: const Text("Edit Lazada"),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white,
+                                                foregroundColor: Colors.black87,
+                                                side: const BorderSide(
+                                                    color: Colors.purple),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 18,
+                                                        vertical: 10),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ],
                                   )
@@ -629,7 +1047,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
                               ),
                             );
                           }
-
                           return const Center(
                               child: Text("Gagal memuat data produk"));
                         },

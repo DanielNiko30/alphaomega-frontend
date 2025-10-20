@@ -1,72 +1,92 @@
 import 'package:equatable/equatable.dart';
 import '../../../../../model/product/shope_model.dart';
-import '../../../../../model/product/product_shopee_model.dart';
 
+/// 🔹 Base abstract event class
 abstract class EditProductShopeeEvent extends Equatable {
+  const EditProductShopeeEvent();
+
   @override
   List<Object?> get props => [];
 }
 
-/// Fetch detail produk dari Shopee berdasarkan id product + satuan
+/// 🔹 Fetch detail produk Shopee berdasarkan id product + satuan
 class FetchShopeeProductDetail extends EditProductShopeeEvent {
-  final String idProduct;
-  final String satuan; // <-- String karena hanya nama satuan yang dipakai
+  final String idProduct; // dari DB lokal
+  final String itemId; // dari Shopee marketplace
+  final String satuan;
 
-  FetchShopeeProductDetail({
+  const FetchShopeeProductDetail({
     required this.idProduct,
+    required this.itemId,
     required this.satuan,
   });
 
   @override
-  List<Object?> get props => [idProduct, satuan];
+  List<Object?> get props => [idProduct, itemId, satuan];
 }
 
-/// Select satuan dari dropdown
+/// 🔹 Pilih satuan dari dropdown
 class SelectSatuanShopee extends EditProductShopeeEvent {
-  final String selectedSatuan; // <-- sekarang String, bukan StokShopee
+  final String selectedSatuan;
 
-  SelectSatuanShopee({required this.selectedSatuan});
+  const SelectSatuanShopee({required this.selectedSatuan});
 
   @override
   List<Object?> get props => [selectedSatuan];
 }
 
-/// Select category dari dropdown
+/// 🔹 Pilih kategori Shopee
 class SelectCategoryShopee extends EditProductShopeeEvent {
   final ShopeeCategory selectedCategory;
 
-  SelectCategoryShopee({required this.selectedCategory});
+  const SelectCategoryShopee({required this.selectedCategory});
 
   @override
   List<Object?> get props => [selectedCategory];
 }
 
-/// Select logistic dari dropdown
+/// 🔹 Pilih logistic Shopee
 class SelectLogisticShopee extends EditProductShopeeEvent {
   final ShopeeLogistic selectedLogistic;
 
-  SelectLogisticShopee({required this.selectedLogistic});
+  const SelectLogisticShopee({required this.selectedLogistic});
 
   @override
   List<Object?> get props => [selectedLogistic];
 }
 
-/// Submit edit produk Shopee
-class SubmitEditShopeeProduct extends EditProductShopeeEvent {
-  final String itemId; // <-- update dari int ke String
-  final String itemSku;
-  final num weight;
-  final Map<String, dynamic> dimension; // {length, width, height}
-  final String condition;
 
-  SubmitEditShopeeProduct({
-    required this.itemId, // tetap String
+/// 🔹 Submit perubahan produk Shopee ke backend
+class SubmitEditShopeeProduct extends EditProductShopeeEvent {
+  final String idProduct;
+  final String itemId;
+  final String itemSku;
+  final double weight;
+  final Map<String, int> dimension;
+  final String condition;
+  final String selectedSatuan;
+  final String brandName; // ✅ baru
+
+  const SubmitEditShopeeProduct({
+    required this.idProduct,
+    required this.itemId,
     required this.itemSku,
     required this.weight,
     required this.dimension,
     required this.condition,
+    required this.selectedSatuan,
+    required this.brandName, // ✅
   });
 
   @override
-  List<Object?> get props => [itemId, itemSku, weight, dimension, condition];
+  List<Object?> get props => [
+        idProduct,
+        itemId,
+        itemSku,
+        weight,
+        dimension,
+        condition,
+        selectedSatuan,
+        brandName, // ✅
+      ];
 }

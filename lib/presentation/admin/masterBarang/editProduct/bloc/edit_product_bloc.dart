@@ -6,10 +6,12 @@ import '../../../../../model/product/edit_productView_model.dart'
     as editProductView;
 import '../../../../../model/product/edit_productView_model.dart';
 import '../../../../../model/product/stok_model.dart' as stokModel;
+import '../../../../../model/product/stok_model.dart';
 import '../../../../../model/product/update_product_model.dart';
 import '../../../../../model/product/kategori_model.dart';
 import '../../../../../model/product/latest_product_model.dart';
 import '../../../../../controller/admin/product_controller.dart';
+import '../../listProduct/bloc/list_product_event.dart';
 import 'edit_product_event.dart';
 import 'edit_product_state.dart';
 
@@ -25,64 +27,37 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
     on<SaveOnlyProduct>(_onSaveOnlyProduct);
     on<LoadSatuanForShopeeEdit>(_onLoadSatuanForShopeeEdit);
     on<SelectSatuanForShopee>(_onSelectSatuanForShopee);
+    on<DeleteStokEvent>(_onDeleteStok); // ✅ Tambahan handler baru
   }
 
-  /// ✅ Helper: Parse stokList supaya aman + trace
+  /// ✅ Helper: parse stok list aman
   List<stokModel.StokProduct> parseStokList(List<dynamic> rawStokList) {
-    print("=== TRACE: RAW STOK LIST ===");
-    print(rawStokList);
-    print("============================");
-
-    return rawStokList.asMap().entries.map((entry) {
-      final index = entry.key;
-      final stok = entry.value;
-
-      print("TRACE: Parsing stok index $index -> $stok");
-
-      if (stok is stokModel.StokProduct) {
-        print(
-            "TRACE: Already StokProduct -> idShopee: ${stok.idProductShopee}");
-        return stok;
-      } else if (stok is editProductView.Stok) {
-        print("TRACE: Stok object -> idShopee: ${stok.idProductShopee}");
+    return rawStokList.map((stok) {
+      if (stok is stokModel.StokProduct) return stok;
+      if (stok is editProductView.Stok) {
         return stokModel.StokProduct(
           idStok: stok.idStok ?? '',
           satuan: stok.satuan,
           harga: stok.harga,
           jumlah: stok.jumlah,
           idProductShopee: stok.idProductShopee,
-          idProductLazada: null,
+          idProductLazada: stok.idProductLazada,
         );
-      } else if (stok is LatestProductStok) {
-        print("TRACE: LatestProductStok -> idShopee: ${stok.idProductShopee}");
+      }
+      if (stok is LatestProductStok) {
         return stokModel.StokProduct(
           idStok: stok.idStok,
           satuan: stok.satuan,
           harga: stok.harga,
           jumlah: stok.stokQty,
           idProductShopee: stok.idProductShopee,
-          idProductLazada: null,
+          idProductLazada: stok.idProductLazada,
         );
-      } else if (stok is Map<String, dynamic>) {
-        print("TRACE: Stok Map JSON -> ${jsonEncode(stok)}");
-        final parsed = stokModel.StokProduct.fromJson(stok);
-        print(
-            "TRACE: Map parsed -> satuan: ${parsed.satuan}, idShopee: ${parsed.idProductShopee}");
-        return parsed;
-      } else if (stok is String) {
-        final parsedJson = jsonDecode(stok);
-        if (parsedJson is Map<String, dynamic>) {
-          final parsed = stokModel.StokProduct.fromJson(parsedJson);
-          print(
-              "TRACE: JSON string parsed -> satuan: ${parsed.satuan}, idShopee: ${parsed.idProductShopee}");
-          return parsed;
-        } else {
-          throw Exception("JSON stok bukan Map: $parsedJson");
-        }
-      } else {
-        throw Exception(
-            "Tipe stok tidak dikenali di index $index -> ${stok.runtimeType}");
       }
+      if (stok is Map<String, dynamic>) {
+        return stokModel.StokProduct.fromJson(stok);
+      }
+      throw Exception("Tipe stok tidak dikenali: ${stok.runtimeType}");
     }).toList();
   }
 
@@ -94,27 +69,17 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
       final kategoriList = await ProductController.fetchKategori();
       emit(KategoriLoaded(kategori: kategoriList));
     } catch (e) {
-      print("TRACE: ERROR load kategori -> $e");
       emit(KategoriFailure(message: "Gagal memuat kategori: ${e.toString()}"));
     }
   }
 
-  /// ✅ Load Produk by ID
+  /// ✅ Load Product by ID
   Future<void> _onLoadProduct(
       LoadProduct event, Emitter<EditProductState> emit) async {
     emit(EditProductLoading());
     try {
       final product = await ProductController.getProductById(event.productId);
       final kategoriList = await ProductController.fetchKategori();
-
-      print("=== TRACE: Loaded product ===");
-      print(product.toJson());
-      print("============================");
-
-      for (var s in product.stokList) {
-        print(
-            "TRACE: Stok -> satuan: ${s.satuan}, harga: ${s.harga}, jumlah: ${s.jumlah}, idShopee: ${s.idProductShopee}");
-      }
 
       String? selectedKategoriId = kategoriList
           .firstWhere(
@@ -136,32 +101,64 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
     }
   }
 
-  /// ✅ Update Produk + return idShopee dan idLazada
+  /// ✅ Update Product
   Future<void> _onUpdateProduct(
-      SubmitUpdateProduct event, Emitter<EditProductState> emit) async {
+    SubmitUpdateProduct event,
+    Emitter<EditProductState> emit,
+  ) async {
     emit(EditProductLoading());
     try {
-      print("DEBUG: Update Product Dipanggil!");
-      print("DEBUG: ID Produk -> ${event.product.idProduct}");
-      print("DEBUG: Data Produk -> ${event.product.toJson()}");
-      print(
-          "DEBUG: Image Bytes -> ${event.imageBytes?.lengthInBytes ?? 0} bytes");
+      // Pisahkan stok lama & stok baru
+      final oldStokList =
+          event.product.stokList.where((s) => s.idStok != null).toList();
+      final newStokList =
+          event.product.stokList.where((s) => s.idStok == null).toList();
 
+      final combinedStokList = [...oldStokList, ...newStokList];
+
+      final productToSend = event.product.copyWith(stokList: combinedStokList);
+
+      // Kirim ke backend
       final response = await ProductController.updateProduct(
         id: event.product.idProduct,
-        product: event.product,
+        product: productToSend,
         imageBytes: event.imageBytes,
       );
 
-      print("DEBUG: Response status -> ${response?.statusCode}");
-      print("DEBUG: Response data -> ${response?.data}");
-
       if (response != null && response.statusCode == 200) {
-        // ✅ Ambil latest product setelah update
+        // Ambil produk terbaru
         final latest = await ProductController.getLatestProduct(
             productId: event.product.idProduct);
 
-        final parsedStokList = parseStokList(latest.stok);
+        // Pastikan stok selalu list
+        final List<dynamic> stokJsonList =
+            latest.stok is List ? latest.stok : [];
+
+        final parsedStokList = stokJsonList.map((e) {
+          // Jika e adalah object (LatestProductStok), pakai dot
+          if (e is LatestProductStok) {
+            return StokProduct(
+              idStok: e.idStok,
+              satuan: e.satuan,
+              jumlah: e.stokQty,
+              harga: e.harga,
+              idProductShopee: e.idProductShopee?.toString(),
+              idProductLazada: e.idProductLazada?.toString(),
+            );
+          } else if (e is Map<String, dynamic>) {
+            // fallback kalau Map
+            return StokProduct(
+              idStok: e['id_stok'],
+              satuan: e['satuan'] ?? "",
+              jumlah: e['jumlah'] ?? 0,
+              harga: e['harga'] ?? 0,
+              idProductShopee: e['id_product_shopee']?.toString(),
+              idProductLazada: e['id_product_lazada']?.toString(),
+            );
+          } else {
+            throw Exception("Unknown stok type");
+          }
+        }).toList();
 
         final updatedProduct = UpdateProduct(
           idProduct: latest.idProduct,
@@ -170,37 +167,46 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
           gambarProduct: latest.gambarProduct,
           deskripsiProduct: latest.deskripsiProduct,
           stokList: parsedStokList,
-          idProductShopee: latest.idProductShopee, // ✅ tambahan
-          idProductLazada: latest.idProductLazada, // ✅ tambahan
+          idProductShopee: latest.idProductShopee,
+          idProductLazada: latest.idProductLazada,
         );
 
-        print("DEBUG: Product berhasil diupdate -> $updatedProduct");
         emit(EditProductUpdated(updatedProduct, kategori: state.kategori));
-
-        // ✅ Reload halaman
-        add(LoadProduct(event.product.idProduct));
+        add(LoadProduct(event.product.idProduct)); // reload
       } else {
         emit(EditProductFailure(
-          "Gagal memperbarui produk: ${response?.data?['message'] ?? 'Unknown error'}",
+          "Gagal memperbarui produk: ${response?.data?['message'] ?? 'Unknown'}",
           kategori: state.kategori,
         ));
       }
     } catch (e, stacktrace) {
-      print("DEBUG: ERROR saat update -> $e");
-      print("DEBUG: STACKTRACE -> $stacktrace");
-      emit(EditProductFailure("Error: ${e.toString()}",
-          kategori: state.kategori));
+      print("ERROR update -> $e");
+      print(stacktrace);
+      emit(EditProductFailure(
+        "Error: ${e.toString()}",
+        kategori: state.kategori,
+      ));
     }
   }
 
-  /// ✅ Save Only Product
   Future<void> _onSaveOnlyProduct(
-      SaveOnlyProduct event, Emitter<EditProductState> emit) async {
+    SaveOnlyProduct event,
+    Emitter<EditProductState> emit,
+  ) async {
     emit(EditProductLoading());
     try {
+      final oldStokList =
+          event.product.stokList.where((s) => s.idStok != null).toList();
+      final newStokList =
+          event.product.stokList.where((s) => s.idStok == null).toList();
+
+      final combinedStokList = [...oldStokList, ...newStokList];
+
+      final productToSend = event.product.copyWith(stokList: combinedStokList);
+
       final response = await ProductController.updateProduct(
         id: event.product.idProduct,
-        product: event.product,
+        product: productToSend,
         imageBytes: event.imageBytes,
       );
 
@@ -208,7 +214,32 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
         final latest = await ProductController.getLatestProduct(
             productId: event.product.idProduct);
 
-        final parsedStokList = parseStokList(latest.stok);
+        final List<dynamic> stokJsonList =
+            latest.stok is List ? latest.stok : [];
+
+        final parsedStokList = stokJsonList.map((e) {
+          if (e is LatestProductStok) {
+            return StokProduct(
+              idStok: e.idStok,
+              satuan: e.satuan,
+              jumlah: e.stokQty,
+              harga: e.harga,
+              idProductShopee: e.idProductShopee?.toString(),
+              idProductLazada: e.idProductLazada?.toString(),
+            );
+          } else if (e is Map<String, dynamic>) {
+            return StokProduct(
+              idStok: e['id_stok'],
+              satuan: e['satuan'] ?? "",
+              jumlah: e['jumlah'] ?? 0,
+              harga: e['harga'] ?? 0,
+              idProductShopee: e['id_product_shopee']?.toString(),
+              idProductLazada: e['id_product_lazada']?.toString(),
+            );
+          } else {
+            throw Exception("Unknown stok type");
+          }
+        }).toList();
 
         final updatedProduct = UpdateProduct(
           idProduct: latest.idProduct,
@@ -217,87 +248,88 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
           gambarProduct: latest.gambarProduct,
           deskripsiProduct: latest.deskripsiProduct,
           stokList: parsedStokList,
-          idProductShopee: latest.idProductShopee, // ✅ tambahan
-          idProductLazada: latest.idProductLazada, // ✅ tambahan
+          idProductShopee: latest.idProductShopee,
+          idProductLazada: latest.idProductLazada,
         );
 
-        print(
-            "DEBUG LOAD AFTER SAVE ONLY -> idProduct: ${updatedProduct.idProduct}");
-        for (var s in updatedProduct.stokList) {
-          print(
-              "DEBUG LOAD AFTER SAVE ONLY STOK -> Satuan: ${s.satuan}, Harga: ${s.harga}, Jumlah: ${s.jumlah}, idShopee: ${s.idProductShopee ?? 'null'}");
-        }
-
         emit(EditProductSavedOnly(updatedProduct, kategori: state.kategori));
-
-        // ✅ Reload halaman
         add(LoadProduct(event.product.idProduct));
       } else {
         emit(EditProductFailure(
-          "Gagal save produk: ${response?.data?['message'] ?? 'Unknown error'}",
+          "Gagal save produk: ${response?.data?['message'] ?? 'Unknown'}",
           kategori: state.kategori,
         ));
       }
-    } catch (e) {
-      print("DEBUG: ERROR saat save only -> $e");
-      emit(EditProductFailure("Error save produk: ${e.toString()}",
-          kategori: state.kategori));
+    } catch (e, stacktrace) {
+      print("ERROR saveOnly -> $e");
+      print(stacktrace);
+      emit(EditProductFailure(
+        "Error save produk: ${e.toString()}",
+        kategori: state.kategori,
+      ));
     }
   }
 
-  /// ✅ Load Satuan Shopee (button edit Shopee)
+  Future<void> _onDeleteStok(
+    DeleteStokEvent event,
+    Emitter<EditProductState> emit,
+  ) async {
+    try {
+      emit(EditProductLoading());
+
+      final success = await ProductController.deleteStok(event.idStok);
+
+      if (success) {
+        print("TRACE: Stok berhasil di-nonaktifkan di backend");
+        emit(EditProductSuccess("Stok berhasil dihapus"));
+
+        // reload product agar tampilan update
+        if (state is EditProductLoaded) {
+          final currentState = state as EditProductLoaded;
+          add(LoadProduct(currentState.product.idProduct));
+        }
+      } else {
+        emit(EditProductFailure("Gagal menghapus stok"));
+      }
+    } catch (e) {
+      emit(EditProductFailure("Terjadi kesalahan: ${e.toString()}"));
+    }
+  }
+
+  /// ✅ Load satuan Shopee
   Future<void> _onLoadSatuanForShopeeEdit(
       LoadSatuanForShopeeEdit event, Emitter<EditProductState> emit) async {
     emit(SatuanShopeeLoading());
     try {
       final latest =
           await ProductController.getLatestProduct(productId: event.productId);
-
-      print("=== TRACE: Stok RAW FROM LATEST PRODUCT ===");
-      print(latest.stok);
-      print("==========================================");
-
-      final List<stokModel.StokProduct> stokList = parseStokList(latest.stok);
-
-      print("=== TRACE: Parsed stok with idShopee ===");
-      for (var s in stokList) {
-        print(
-            "TRACE: Stok -> satuan: ${s.satuan}, harga: ${s.harga}, jumlah: ${s.jumlah}, idShopee: ${s.idProductShopee}");
-      }
-
+      final stokList = parseStokList(latest.stok);
       final availableSatuan =
           stokList.where((s) => s.idProductShopee != null).toList();
 
       if (availableSatuan.isEmpty) {
-        print("TRACE: Tidak ada satuan dengan idShopee");
-        emit(const SatuanShopeeFailure(
-            "Tidak ada satuan yang terhubung ke Shopee"));
+        emit(const SatuanShopeeFailure("Tidak ada satuan Shopee"));
       } else {
         emit(SatuanShopeeLoaded(satuanList: availableSatuan));
       }
-    } catch (e, st) {
-      print("TRACE: ERROR load satuan Shopee -> $e");
-      print(st);
-      emit(SatuanShopeeFailure("Gagal memuat satuan: ${e.toString()}"));
+    } catch (e) {
+      emit(SatuanShopeeFailure("Gagal load satuan: ${e.toString()}"));
     }
   }
 
-  /// ✅ Select Satuan Shopee
+  /// ✅ Select satuan Shopee
   void _onSelectSatuanForShopee(
       SelectSatuanForShopee event, Emitter<EditProductState> emit) {
-    print(
-        "TRACE: Satuan Shopee dipilih -> ${event.selectedSatuan} | ProductID: ${event.idProduct}");
     emit(SatuanShopeeSelected(
       selectedSatuan: event.selectedSatuan,
       idProduct: event.idProduct,
     ));
   }
 
-  /// ✅ Select Kategori
+  /// ✅ Select kategori
   void _onSelectKategori(SelectKategori event, Emitter<EditProductState> emit) {
     if (state is EditProductLoaded) {
       final currentState = state as EditProductLoaded;
-      print("TRACE: Kategori dipilih -> ${event.kategoriId}");
       emit(EditProductLoaded(
         currentState.product,
         kategori: currentState.kategori,

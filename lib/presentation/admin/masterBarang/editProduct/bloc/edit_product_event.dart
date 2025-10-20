@@ -44,11 +44,6 @@ class SelectKategori extends EditProductEvent {
   List<Object?> get props => [kategoriId];
 }
 
-//
-// 🔹 Save / Update Product
-//
-
-/// Submit update product (Simpan perubahan + Shopee)
 class SubmitUpdateProduct extends EditProductEvent {
   final UpdateProduct product;
   final Uint8List? imageBytes;

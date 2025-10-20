@@ -46,10 +46,19 @@ class UpdateProduct {
 
   /// 🔹 Konversi dari Model ke JSON yang sesuai dengan backend
   Map<String, dynamic> toJson() {
-    final stokJsonList = stokList.map((stok) => stok.toJson()).toList();
-
-    print("DEBUG: stokList setelah dikonversi -> ${stokJsonList.runtimeType}");
-    print("DEBUG: Isi stokList setelah dikonversi -> $stokJsonList");
+    final stokJsonList = stokList.map((stok) {
+      final map = {
+        'satuan': stok.satuan,
+        'harga': stok.harga,
+        'jumlah': stok.jumlah,
+        'id_product_shopee': stok.idProductShopee ?? "",
+        'id_product_lazada': stok.idProductLazada ?? "",
+      };
+      if (stok.idStok != null && stok.idStok!.isNotEmpty) {
+        map['id_stok'] = stok.idStok!;
+      }
+      return map;
+    }).toList();
 
     return {
       'id_product': idProduct,
@@ -57,10 +66,9 @@ class UpdateProduct {
       'nama_product': namaProduct,
       'gambar_product': gambarProduct ?? "",
       'deskripsi_product': deskripsiProduct ?? "",
-      'id_product_shopee': idProductShopee ?? "", // ✅ tambahan
-      'id_product_lazada': idProductLazada ?? "", // ✅ tambahan
-      "stok_list":
-          jsonEncode(stokJsonList), // ✅ sudah List<Map<String, dynamic>>
+      'id_product_shopee': idProductShopee ?? "",
+      'id_product_lazada': idProductLazada ?? "",
+      "stok_list": jsonEncode(stokJsonList),
     };
   }
 

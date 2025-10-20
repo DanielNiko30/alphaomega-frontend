@@ -60,9 +60,15 @@ class EditProductLoaded extends EditProductState {
       [product, kategori, selectedKategoriId, isSavedToDB];
 }
 
-//
-// 🔹 Kategori Loaded / Failure
-//
+class EditProductSuccess extends EditProductState {
+  final String message;
+
+  const EditProductSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class KategoriLoaded extends EditProductState {
   final List<Kategori> kategori;
 
@@ -86,8 +92,6 @@ class KategoriFailure extends EditProductState {
 // 🔹 Update / Save Status
 //
 class EditProductSavingToDB extends EditProductState {}
-
-class EditProductSuccess extends EditProductState {}
 
 class EditProductSavedOnly extends EditProductState {
   final UpdateProduct savedProduct;
