@@ -4,7 +4,7 @@ import '../../model/laporan/laporan_model.dart';
 
 class LaporanController {
   final String baseUrl =
-      "http://localhost:3000/api/laporan"; // ganti sesuai backendmu
+      "https://tokalphaomegaploso.my.id/api/laporan"; // ganti sesuai backendmu
 
   /// =====================================
   /// 📊 LAPORAN PENJUALAN

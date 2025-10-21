@@ -33,8 +33,12 @@ import 'package:frontend/presentation/admin/masterBarang/listProduct/ui/list_pro
 import 'package:frontend/presentation/admin/masterBarang/addProduct/ui/add_product_screen.dart';
 import 'package:frontend/presentation/admin/masterBarang/addKategori/ui/add_kategori_screen.dart';
 
+import 'controller/admin/laporan_controller.dart';
 import 'controller/user/user_controller.dart';
 import 'controller/admin/product_controller.dart';
+import 'presentation/admin/laporan/laporanPembelian/bloc/laporan_pembelian_bloc.dart';
+import 'presentation/admin/laporan/laporanPembelian/bloc/laporan_pembelian_event.dart';
+import 'presentation/admin/laporan/laporanPembelian/ui/laporan_pembelian_screen.dart';
 import 'presentation/admin/masterPesanan/orderLazada/bloc/order_lazada_bloc.dart';
 import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_bloc.dart';
 import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_event.dart';
@@ -176,6 +180,10 @@ class MyApp extends StatelessWidget {
         '/lazadaOrders': (context) => BlocProvider(
               create: (context) => LazadaOrdersBloc()..add(FetchLazadaOrders()),
               child: const LazadaOrdersScreen(),
+            ),
+        '/laporanPembelian': (context) => BlocProvider(
+              create: (_) => LaporanPembelianBloc(LaporanController()),
+              child: const LaporanPembelianScreen(),
             ),
       },
       home: const LoginScreen(),
