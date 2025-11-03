@@ -2,6 +2,7 @@ class DTransJual {
   String idProduk;
   double jumlahBarang;
   int hargaSatuan;
+  int? hargaBeliSatuan;
   int subtotal;
   String satuan;
 
@@ -9,6 +10,7 @@ class DTransJual {
     required this.idProduk,
     required this.jumlahBarang,
     required this.hargaSatuan,
+    this.hargaBeliSatuan,
     required this.subtotal,
     required this.satuan,
   });

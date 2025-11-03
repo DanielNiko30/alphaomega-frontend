@@ -54,12 +54,16 @@ class _EditProductScreenState extends State<EditProductScreen> {
               final satuan = dyn.satuan ?? '';
               final jumlah = int.tryParse((dyn.jumlah ?? 0).toString()) ?? 0;
               final harga = int.tryParse((dyn.harga ?? 0).toString()) ?? 0;
+              final hargaBeli = int.tryParse(
+                      (dyn.harga_beli ?? dyn.hargaBeli ?? 0).toString()) ??
+                  0;
 
               return StokProduct(
                 idStok: idStok,
                 satuan: satuan,
                 jumlah: jumlah,
                 harga: harga,
+                hargaBeli: hargaBeli,
               );
             } catch (_) {
               return null;
@@ -83,6 +87,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   List<TextEditingController> satuanControllers = [];
   List<TextEditingController> hargaControllers = [];
+  List<TextEditingController> hargaBeliControllers = [];
   List<TextEditingController> stokControllers = [];
 
   bool hasShopeeSatuan = false;
@@ -131,6 +136,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       satuanControllers.add(TextEditingController());
       stokControllers.add(TextEditingController());
       hargaControllers.add(TextEditingController());
+      hargaBeliControllers.add(TextEditingController());
     });
   }
 
@@ -144,6 +150,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
     final satuanList = satuanControllers.map((c) => c.text).toList();
     final hargaList = hargaControllers.map((c) => c.text).toList();
+    final hargaBeliList = hargaBeliControllers.map((c) => c.text).toList();
     final jumlahList = stokControllers.map((c) => c.text).toList();
 
     // Ambil stok lama dari Bloc
@@ -168,6 +175,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         idStok: oldStok?.idStok, // tetap pakai idStok lama jika ada
         satuan: satuan,
         harga: int.tryParse(hargaList[index]) ?? 0,
+        hargaBeli: int.tryParse(hargaBeliList[index]) ?? 0,
         jumlah: int.tryParse(jumlahList[index]) ?? 0,
         // stok lama tetap bawa ID Shopee/Lazada, stok baru null
         idProductShopee: oldStok?.idProductShopee,
@@ -197,6 +205,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   void _saveOnlyProduct() {
     final satuanList = satuanControllers.map((c) => c.text).toList();
     final hargaList = hargaControllers.map((c) => c.text).toList();
+    final hargaBeliList = hargaBeliControllers.map((c) => c.text).toList();
     final jumlahList = stokControllers.map((c) => c.text).toList();
 
     final currentState = context.read<EditProductBloc>().state;
@@ -219,6 +228,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         idStok: oldStok?.idStok, // tetap pakai idStok lama jika ada
         satuan: satuan,
         harga: int.tryParse(hargaList[index]) ?? 0,
+        hargaBeli: int.tryParse(hargaBeliList[index]) ?? 0,
         jumlah: int.tryParse(jumlahList[index]) ?? 0,
         // stok lama tetap bawa ID Shopee/Lazada, stok baru null
         idProductShopee: oldStok?.idProductShopee,
@@ -309,6 +319,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                     text: stok.jumlah.toString()));
                                 hargaControllers.add(TextEditingController(
                                     text: stok.harga.toString()));
+                                hargaBeliControllers.add(TextEditingController(
+                                    text: (stok.hargaBeli).toString()));
                               }
                             }
                             final stokList = product.stokList;
@@ -535,6 +547,21 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 8),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: TextFormField(
+                                                    controller:
+                                                        hargaBeliControllers[
+                                                            index],
+                                                    decoration:
+                                                        const InputDecoration(
+                                                            labelText:
+                                                                "Harga Beli"),
+                                                    keyboardType:
+                                                        TextInputType.number,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
                                                 IconButton(
                                                   icon: const Icon(Icons.delete,
                                                       color: Colors.red),
@@ -553,6 +580,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                                           stokControllers
                                                               .removeAt(index);
                                                           hargaControllers
+                                                              .removeAt(index);
+                                                          hargaBeliControllers
                                                               .removeAt(index);
                                                         });
                                                         ScaffoldMessenger.of(
@@ -579,6 +608,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                                         stokControllers
                                                             .removeAt(index);
                                                         hargaControllers
+                                                            .removeAt(index);
+                                                        hargaBeliControllers
                                                             .removeAt(index);
                                                       });
                                                     }

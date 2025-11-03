@@ -44,12 +44,14 @@ class StokItem {
   final String idStok;
   final String satuan;
   final int harga;
+  final int hargaBeli;
   final int stok;
 
   StokItem({
     required this.idStok,
     required this.satuan,
     required this.harga,
+    required this.hargaBeli,
     required this.stok,
   });
 
@@ -58,6 +60,7 @@ class StokItem {
       idStok: json['id_stok'] ?? '',
       satuan: json['satuan'] ?? '',
       harga: json['harga'] ?? 0,
+      hargaBeli: json['harga_beli'] ?? 0,
       stok: json['stok'] ?? 0,
     );
   }
@@ -67,6 +70,7 @@ class StokItem {
       'id_stok': idStok,
       'satuan': satuan,
       'harga': harga,
+      'harga_beli': hargaBeli,
       'stok': stok,
     };
   }

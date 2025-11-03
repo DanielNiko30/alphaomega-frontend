@@ -52,6 +52,15 @@ class LazadaOrdersLoadingMore extends LazadaOrdersState {
   List<Object?> get props => [currentOrders];
 }
 
+class LazadaOrdersSuccess extends LazadaOrdersState {
+  final String message;
+
+  const LazadaOrdersSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class LazadaOrdersError extends LazadaOrdersState {
   final String message;
   final List<LazadaOrder> previousOrders;
@@ -60,4 +69,14 @@ class LazadaOrdersError extends LazadaOrdersState {
 
   @override
   List<Object?> get props => [message, previousOrders];
+}
+
+class LazadaResiReady extends LazadaOrdersState {
+  final String pdfBase64;
+  final String orderId;
+
+  LazadaResiReady({required this.pdfBase64, required this.orderId});
+  
+  @override
+  List<Object?> get props => [pdfBase64, orderId];
 }

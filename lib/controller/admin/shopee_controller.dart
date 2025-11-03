@@ -1,11 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/model/product/shope_model.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../model/orderOnline/ship_order_response_model.dart';
 import '../../model/orderOnline/shipping_document_model.dart';
 import '../../model/orderOnline/shipping_parameter_model.dart';
 import '../../model/orderOnline/shopee_order_model.dart';
 import '../../model/product/shopee_product_info.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../utils/download_pdf_stub.dart' if (dart.library.html) '../../utils/download_pdf_web.dart';
 
 class ShopeeController {
   static const String baseUrl = "https://tokalphaomegaploso.my.id/api/shopee";
@@ -437,5 +444,35 @@ class ShopeeController {
     } else {
       throw Exception('Gagal ambil shipping document');
     }
+  }
+
+  static Future<Uint8List> printShopeeResi(String orderSn) async {
+    final url = Uri.parse('$baseUrl/print-resi');
+    print("📦 Request print resi Shopee untuk order_sn: $orderSn");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"order_sn": orderSn}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data["success"] == true && data["pdf_base64"] != null) {
+        final pdfBytes = base64Decode(data["pdf_base64"]);
+        print("✅ Resi PDF diterima dari server (${pdfBytes.length} bytes)");
+        return pdfBytes;
+      } else {
+        throw Exception("❌ Gagal decode PDF dari server (${data["message"]})");
+      }
+    } else {
+      throw Exception("❌ Gagal ambil resi (${response.statusCode})");
+    }
+  }
+
+  /// Fungsi auto-download sesuai platform
+  static Future<void> downloadResi(Uint8List bytes, String filename) async {
+    await downloadPdf(bytes, filename);
   }
 }

@@ -16,7 +16,7 @@ class ShopeeOrdersLoading extends ShopeeOrdersState {}
 /// 🔹 Saat data berhasil dimuat
 class ShopeeOrdersLoaded extends ShopeeOrdersState {
   final List<ShopeeOrder> orders;
-  final bool hasMore; // untuk pagination
+  final bool hasMore;
   final bool isRefreshing;
   final ShopeeOrder? selectedOrder;
 
@@ -66,3 +66,22 @@ class ShopeeOrdersError extends ShopeeOrdersState {
   List<Object?> get props => [message, previousOrders];
 }
 
+/// 🧾 Saat sedang mencetak resi
+class ShopeeOrdersPrintingResi extends ShopeeOrdersState {
+  final String orderSn;
+
+  const ShopeeOrdersPrintingResi(this.orderSn);
+
+  @override
+  List<Object?> get props => [orderSn];
+}
+
+/// 🧾 Saat resi berhasil dicetak
+class ShopeeOrdersResiPrinted extends ShopeeOrdersState {
+  final String filePath;
+
+  const ShopeeOrdersResiPrinted(this.filePath);
+
+  @override
+  List<Object?> get props => [filePath];
+}

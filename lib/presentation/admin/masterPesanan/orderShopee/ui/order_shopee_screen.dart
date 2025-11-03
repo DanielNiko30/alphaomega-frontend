@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/presentation/admin/masterPesanan/orderShopee/ui/shopee_resi_popup.dart';
 import 'package:intl/intl.dart';
 import '../../../../../controller/admin/shopee_controller.dart';
 import '../../../../../model/orderOnline/shopee_order_model.dart';
@@ -398,14 +400,40 @@ class _ShopeeOrdersScreenState extends State<ShopeeOrdersScreen> {
                                                   const SizedBox(width: 8),
                                                 ] else ...[
                                                   OutlinedButton(
-                                                    onPressed: () {
-                                                      ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
-                                                        SnackBar(
-                                                            content: Text(
-                                                                "Cetak resi order ${order.orderSn}")),
-                                                      );
+                                                    onPressed: () async {
+                                                      try {
+                                                        final pdfBytes =
+                                                            await ShopeeController
+                                                                .printShopeeResi(
+                                                                    order
+                                                                        .orderSn);
+
+                                                        if (pdfBytes
+                                                            .isNotEmpty) {
+                                                          if (context.mounted) {
+                                                            showDialog(
+                                                              context: context,
+                                                              builder: (ctx) =>
+                                                                  ShopeeResiPopup(
+                                                                orderSn: order
+                                                                    .orderSn,
+                                                                pdfBytes:
+                                                                    pdfBytes,
+                                                              ),
+                                                            );
+                                                          }
+                                                        }
+                                                      } catch (e) {
+                                                        debugPrint(
+                                                            "❌ Error printShopeeResi: $e");
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                              content: Text(
+                                                                  'Gagal ambil resi: $e')),
+                                                        );
+                                                      }
                                                     },
                                                     child: const Text(
                                                         "Print Resi"),

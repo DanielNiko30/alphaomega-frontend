@@ -43,3 +43,22 @@ class ChangeLazadaOrderStatus extends LazadaOrdersEvent {
   @override
   List<Object?> get props => [status];
 }
+
+class SetLazadaReadyToShip extends LazadaOrdersEvent {
+  final String orderId;
+
+  const SetLazadaReadyToShip(this.orderId);
+
+  @override
+  List<Object?> get props => [orderId];
+}
+
+/// 🔹 Print resi Lazada (ambil PDF base64)
+class PrintLazadaResi extends LazadaOrdersEvent {
+  final String orderId; // 🔹 ganti dari packageId ke orderId
+
+  const PrintLazadaResi(this.orderId);
+
+  @override
+  List<Object?> get props => [orderId];
+}

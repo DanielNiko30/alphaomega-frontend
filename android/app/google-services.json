@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "613721302409",
+    "project_id": "alphaomega-45268",
+    "storage_bucket": "alphaomega-45268.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:613721302409:android:d98cbd555a59777664ed58",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCv-Gos2eOM295KXagezFbQBgFHVmkAKrQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

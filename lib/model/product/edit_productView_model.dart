@@ -64,6 +64,7 @@ class Stok {
   final int harga;
   final String? idProductShopee; // ✅ Untuk integrasi Shopee
   final String? idProductLazada; // ✅ Untuk integrasi Lazada
+  final int? hargaBeli;
 
   Stok({
     this.idStok,
@@ -73,6 +74,7 @@ class Stok {
     required String stok,
     this.idProductShopee,
     this.idProductLazada,
+    this.hargaBeli,
   });
 
   // Factory method untuk decode dari JSON
@@ -91,6 +93,9 @@ class Stok {
       idProductLazada: json['id_product_lazada'] != null
           ? json['id_product_lazada'].toString()
           : null,
+      hargaBeli: json['harga_beli'] != null
+          ? json['harga_beli'] as int
+          : (json['hargaBeli'] != null ? json['hargaBeli'] as int : 0),
     );
   }
 
@@ -103,6 +108,7 @@ class Stok {
       'harga': harga,
       'id_product_shopee': idProductShopee,
       'id_product_lazada': idProductLazada,
+      'harga_beli': hargaBeli,
     };
   }
 }

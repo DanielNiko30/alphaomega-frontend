@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-
+import '../../utils/download_pdf_stub.dart'
+    if (dart.library.html) '../../utils/download_pdf_web.dart';
 import '../../model/product/lazada_model.dart';
 
 class LazadaController {
@@ -145,5 +147,58 @@ class LazadaController {
         'Gagal mengambil Ready To Ship Orders Lazada: ${response.body}',
       );
     }
+  }
+
+  Future<Map<String, dynamic>> readyToShipLazada(String orderId) async {
+    try {
+      final url = Uri.parse('$baseUrl/lazada/ready-to-ship');
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({"order_id": orderId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          "success": data["success"] ?? false,
+          "message": data["message"] ?? "Tidak ada pesan",
+          "data": data["data"],
+        };
+      } else {
+        return {
+          "success": false,
+          "message":
+              "Gagal mengubah status pesanan menjadi Ready To Ship: ${response.body}",
+        };
+      }
+    } catch (e) {
+      throw Exception('Gagal request Ready To Ship Lazada: $e');
+    }
+  }
+
+  Future<String?> printResiLazada(String orderId) async {
+    try {
+      final url = Uri.parse('$baseUrl/print-resi');
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({"order_id": orderId}), // 🔹 pake order_id sekarang
+      );
+
+      final jsonRes = json.decode(utf8.decode(response.bodyBytes));
+
+      if (response.statusCode == 200 && jsonRes['pdf_base64'] != null) {
+        return jsonRes['pdf_base64']; // ✅ backend kirim base64 string
+      } else {
+        throw Exception(jsonRes['message'] ?? 'Gagal mengambil PDF');
+      }
+    } catch (e) {
+      throw Exception('Gagal ambil AWB dari Lazada: $e');
+    }
+  }
+
+  static Future<void> downloadResi(Uint8List bytes, String filename) async {
+    await downloadPdf(bytes, filename);
   }
 }

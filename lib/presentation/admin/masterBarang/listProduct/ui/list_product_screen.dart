@@ -313,8 +313,17 @@ class ProductGrid extends StatelessWidget {
                     child: (product.gambarProduct != null &&
                             product.gambarProduct!.isNotEmpty)
                         ? Image.memory(
-                            base64Decode(product.gambarProduct!.split(",")[1]),
+                            base64Decode(
+                              product.gambarProduct!.contains(',')
+                                  ? product.gambarProduct!.split(',').last
+                                  : product.gambarProduct!,
+                            ),
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              print('❌ Gagal decode gambar: $error');
+                              return const Icon(Icons.broken_image,
+                                  size: 48, color: Colors.grey);
+                            },
                           )
                         : Container(
                             color: Colors.grey[200],

@@ -11,9 +11,9 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import '../model/laporan/laporan_model.dart';
 
-// Untuk Web download
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+// Gunakan import dart:html hanya di web (hindari error di Android/Windows)
+import 'conditional_html_stub.dart'
+    if (dart.library.html) 'conditional_html_real.dart' as html;
 
 Future<void> generateReportPdf({
   required BuildContext context,
@@ -24,9 +24,6 @@ Future<void> generateReportPdf({
   try {
     await initializeDateFormatting('id_ID', null);
 
-    // =====================================================
-    // Load TTF font yang mendukung Unicode
-    // =====================================================
     final fontData =
         await rootBundle.load('assets/fonts/Roboto/static/Roboto-Regular.ttf');
     final ttf = pw.Font.ttf(fontData);
@@ -53,27 +50,24 @@ Future<void> generateReportPdf({
             ),
             pw.SizedBox(height: 16),
             _buildReportTable(
-                reportType, data, dateFormatter, currencyFormatter, ttf),
+              reportType,
+              data,
+              dateFormatter,
+              currencyFormatter,
+              ttf,
+            ),
           ];
         },
       ),
     );
 
-    // =====================================================
-    // Simpan PDF ke file
-    // =====================================================
     final pdfBytes = await pdf.save();
 
     if (kIsWeb) {
       // Web: download lewat browser
-      final blob = html.Blob([Uint8List.fromList(pdfBytes)], 'application/pdf');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute("download", "$reportTitle.pdf")
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      html.downloadPdfWeb(pdfBytes, "$reportTitle.pdf");
     } else {
-      // Mobile/Desktop
+      // Mobile / Desktop
       await _savePdfToFile(pdfBytes, reportTitle);
     }
 
@@ -102,11 +96,12 @@ Future<void> _savePdfToFile(List<int> pdfBytes, String fileName) async {
     }
 
     final file = File(
-        '${dir!.path}/$fileName-${DateTime.now().millisecondsSinceEpoch}.pdf');
+      '${dir!.path}/$fileName-${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
     await file.writeAsBytes(pdfBytes);
-    debugPrint('PDF saved at ${file.path}');
+    debugPrint('✅ PDF saved at: ${file.path}');
   } catch (e) {
-    debugPrint('Error saving PDF: $e');
+    debugPrint('❌ Error saving PDF: $e');
   }
 }
 
@@ -199,7 +194,10 @@ pw.Widget _buildReportTable(
                 child: pw.Text(
                   "Total: ${currencyFormatter.format(item.totalHarga)}",
                   style: pw.TextStyle(
-                      font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 12),
+                    font: ttf,
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
               pw.Divider(thickness: 1),
@@ -211,7 +209,10 @@ pw.Widget _buildReportTable(
 
     default:
       return pw.Center(
-          child: pw.Text("Tipe laporan tidak dikenali.",
-              style: pw.TextStyle(font: ttf)));
+        child: pw.Text(
+          "Tipe laporan tidak dikenali.",
+          style: pw.TextStyle(font: ttf),
+        ),
+      );
   }
 }

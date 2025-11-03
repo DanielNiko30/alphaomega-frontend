@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/widget/sidebar.dart';
@@ -118,9 +121,12 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                   MainAxisAlignment.spaceEvenly,
                                               children: [
                                                 Expanded(
-                                                  child: Image.network(
-                                                      product['image'] ?? '',
-                                                      fit: BoxFit.cover),
+                                                  child: SizedBox(
+                                                    width: 120,
+                                                    height: 120,
+                                                    child: buildProductImage(
+                                                        product['image']),
+                                                  ),
                                                 ),
                                                 Padding(
                                                   padding:
@@ -421,18 +427,13 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                         borderRadius:
                                                             BorderRadius
                                                                 .circular(8),
-                                                        child: Image.network(
-                                                          item['image'] ?? '',
-                                                          width: 56,
-                                                          height: 56,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder: (context,
-                                                                  error,
-                                                                  stackTrace) =>
-                                                              const Icon(
-                                                                  Icons
-                                                                      .image_not_supported,
-                                                                  size: 40),
+                                                        child: SizedBox(
+                                                          width: 60,
+                                                          height: 60,
+                                                          child:
+                                                              buildProductImage(
+                                                                  item[
+                                                                      'image']),
                                                         ),
                                                       ),
                                                       const SizedBox(width: 12),
@@ -727,7 +728,6 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                                                 const SizedBox(
                                                                     width: 6),
 
-// ➕ Tombol tambah
                                                                 InkWell(
                                                                   onTap: item['quantity'] <
                                                                           item[
@@ -912,4 +912,80 @@ class _TransJualScreenState extends State<TransJualScreen> {
       ),
     );
   }
+}
+
+final Map<String, Uint8List> _imageCache = {};
+Widget buildProductImage(String? imageData) {
+  if (imageData == null || imageData.isEmpty) {
+    return Container(
+      color: Colors.grey[300],
+      child:
+          const Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+    );
+  }
+
+  Widget imageWidget;
+
+  if (imageData.startsWith('http')) {
+    // 🔹 Gunakan CachedNetworkImage jika ingin lebih efisien (opsional)
+    imageWidget = Image.network(
+      imageData,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (context, error, stackTrace) {
+        return const Center(
+          child: Icon(Icons.broken_image, color: Colors.grey),
+        );
+      },
+    );
+  } else {
+    try {
+      // 🔹 Gunakan cache untuk hasil decode base64
+      Uint8List? bytes = _imageCache[imageData];
+      if (bytes == null) {
+        final base64String =
+            imageData.contains(',') ? imageData.split(',').last : imageData;
+        bytes = base64Decode(base64String);
+        _imageCache[imageData] = bytes; // simpan di cache
+      }
+
+      imageWidget = Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint('⚠️ Error parsing image: $e');
+      return Container(
+        color: Colors.grey[300],
+        child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      );
+    }
+  }
+
+  // 🔹 Bungkus agar ukuran dan rasio tetap konsisten
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.grey[200],
+      child: FittedBox(
+        fit: BoxFit.cover,
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox(
+          width: 100,
+          height: 100,
+          child: imageWidget,
+        ),
+      ),
+    ),
+  );
 }

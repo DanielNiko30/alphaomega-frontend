@@ -36,13 +36,13 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
       if (stok is stokModel.StokProduct) return stok;
       if (stok is editProductView.Stok) {
         return stokModel.StokProduct(
-          idStok: stok.idStok ?? '',
-          satuan: stok.satuan,
-          harga: stok.harga,
-          jumlah: stok.jumlah,
-          idProductShopee: stok.idProductShopee,
-          idProductLazada: stok.idProductLazada,
-        );
+            idStok: stok.idStok ?? '',
+            satuan: stok.satuan,
+            harga: stok.harga,
+            jumlah: stok.jumlah,
+            idProductShopee: stok.idProductShopee,
+            idProductLazada: stok.idProductLazada,
+            hargaBeli: stok.hargaBeli);
       }
       if (stok is LatestProductStok) {
         return stokModel.StokProduct(
@@ -52,13 +52,23 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
           jumlah: stok.stokQty,
           idProductShopee: stok.idProductShopee,
           idProductLazada: stok.idProductLazada,
+          hargaBeli: stok.hargaBeli,
         );
       }
+
       if (stok is Map<String, dynamic>) {
         return stokModel.StokProduct.fromJson(stok);
       }
       throw Exception("Tipe stok tidak dikenali: ${stok.runtimeType}");
     }).toList();
+  }
+
+  int parseHarga(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   /// ✅ Load Kategori
@@ -135,23 +145,23 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
             latest.stok is List ? latest.stok : [];
 
         final parsedStokList = stokJsonList.map((e) {
-          // Jika e adalah object (LatestProductStok), pakai dot
           if (e is LatestProductStok) {
             return StokProduct(
               idStok: e.idStok,
               satuan: e.satuan,
-              jumlah: e.stokQty,
-              harga: e.harga,
+              jumlah: parseHarga(e.stokQty),
+              harga: parseHarga(e.harga),
+              hargaBeli: parseHarga(e.hargaBeli),
               idProductShopee: e.idProductShopee?.toString(),
               idProductLazada: e.idProductLazada?.toString(),
             );
           } else if (e is Map<String, dynamic>) {
-            // fallback kalau Map
             return StokProduct(
               idStok: e['id_stok'],
               satuan: e['satuan'] ?? "",
-              jumlah: e['jumlah'] ?? 0,
-              harga: e['harga'] ?? 0,
+              jumlah: parseHarga(e['jumlah']),
+              harga: parseHarga(e['harga']),
+              hargaBeli: parseHarga(e['harga_beli']),
               idProductShopee: e['id_product_shopee']?.toString(),
               idProductLazada: e['id_product_lazada']?.toString(),
             );
@@ -222,8 +232,9 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
             return StokProduct(
               idStok: e.idStok,
               satuan: e.satuan,
-              jumlah: e.stokQty,
-              harga: e.harga,
+              jumlah: parseHarga(e.stokQty),
+              harga: parseHarga(e.harga),
+              hargaBeli: parseHarga(e.hargaBeli),
               idProductShopee: e.idProductShopee?.toString(),
               idProductLazada: e.idProductLazada?.toString(),
             );
@@ -231,8 +242,9 @@ class EditProductBloc extends Bloc<EditProductEvent, EditProductState> {
             return StokProduct(
               idStok: e['id_stok'],
               satuan: e['satuan'] ?? "",
-              jumlah: e['jumlah'] ?? 0,
-              harga: e['harga'] ?? 0,
+              jumlah: parseHarga(e['jumlah']),
+              harga: parseHarga(e['harga']),
+              hargaBeli: parseHarga(e['harga_beli']),
               idProductShopee: e['id_product_shopee']?.toString(),
               idProductLazada: e['id_product_lazada']?.toString(),
             );

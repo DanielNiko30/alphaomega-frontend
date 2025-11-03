@@ -53,6 +53,7 @@ class UpdateProduct {
         'jumlah': stok.jumlah,
         'id_product_shopee': stok.idProductShopee ?? "",
         'id_product_lazada': stok.idProductLazada ?? "",
+        'harga_beli': stok.hargaBeli,
       };
       if (stok.idStok != null && stok.idStok!.isNotEmpty) {
         map['id_stok'] = stok.idStok!;

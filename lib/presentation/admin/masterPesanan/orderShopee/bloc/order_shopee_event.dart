@@ -11,7 +11,6 @@ abstract class ShopeeOrdersEvent extends Equatable {
 class FetchShopeeOrders extends ShopeeOrdersEvent {
   final bool isRefresh;
 
-  /// [isRefresh] = true → data lama akan dihapus dan load ulang dari awal
   const FetchShopeeOrders({this.isRefresh = false});
 
   @override
@@ -31,9 +30,6 @@ class SelectShopeeOrder extends ShopeeOrdersEvent {
   List<Object?> get props => [orderSn];
 }
 
-/// 🔹 Hapus error dari state agar UI kembali normal
-class ClearShopeeOrdersError extends ShopeeOrdersEvent {}
-
 /// 🔹 Ganti status order yang ingin ditampilkan
 /// Bisa "READY_TO_SHIP" atau "PROCESSED"
 class ChangeShopeeOrderStatus extends ShopeeOrdersEvent {
@@ -43,4 +39,17 @@ class ChangeShopeeOrderStatus extends ShopeeOrdersEvent {
 
   @override
   List<Object?> get props => [status];
+}
+
+/// 🔹 Hapus error dari state agar UI kembali normal
+class ClearShopeeOrdersError extends ShopeeOrdersEvent {}
+
+/// 🧾 Cetak resi Shopee
+class PrintShopeeResi extends ShopeeOrdersEvent {
+  final String orderSn;
+
+  const PrintShopeeResi(this.orderSn);
+
+  @override
+  List<Object?> get props => [orderSn];
 }

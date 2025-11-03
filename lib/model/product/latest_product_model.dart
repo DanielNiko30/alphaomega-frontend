@@ -77,6 +77,7 @@ class LatestProductStok {
   final int stokQty;
   final String? idProductShopee; // ✅ tetap String
   final String? idProductLazada; // ✅ tetap String
+  final int? hargaBeli;
 
   LatestProductStok({
     required this.idStok,
@@ -85,6 +86,7 @@ class LatestProductStok {
     required this.stokQty,
     this.idProductShopee,
     this.idProductLazada,
+    this.hargaBeli,
   });
 
   factory LatestProductStok.fromJson(Map<String, dynamic> json) {
@@ -94,6 +96,7 @@ class LatestProductStok {
       idStok: json['idStok'] ?? '',
       satuan: json['satuan'] ?? '',
       harga: json['harga'] ?? 0,
+      hargaBeli: json['harga_beli'] ?? 0,
       stokQty: json['stokQty'] ?? 0,
 
       // ✅ FIX: gunakan camelCase sesuai JSON Postman
@@ -109,6 +112,7 @@ class LatestProductStok {
         "stokQty": stokQty,
         "id_product_shopee": idProductShopee,
         "id_product_lazada": idProductLazada,
+        "harga_beli": hargaBeli,
       };
 
   /// ✅ copyWith untuk stok
@@ -118,6 +122,8 @@ class LatestProductStok {
     int? harga,
     int? stokQty,
     String? idProductShopee,
+    String? idProductLazada,
+    int? hargaBeli,
   }) {
     return LatestProductStok(
         idStok: idStok ?? this.idStok,
@@ -125,6 +131,7 @@ class LatestProductStok {
         harga: harga ?? this.harga,
         stokQty: stokQty ?? this.stokQty,
         idProductShopee: idProductShopee ?? this.idProductShopee,
-        idProductLazada: idProductLazada ?? this.idProductLazada);
+        idProductLazada: idProductLazada ?? this.idProductLazada,
+        hargaBeli: hargaBeli ?? this.hargaBeli);
   }
 }

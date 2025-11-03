@@ -39,7 +39,7 @@ class _ListBarangPesananScreenState extends State<ListBarangPesananScreen> {
 
     // Connect ke backend Socket.IO
     socket = IO.io(
-      'https://api.tokalphaomegaploso.my.id',
+      'https://tokalphaomegaploso.my.id',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
