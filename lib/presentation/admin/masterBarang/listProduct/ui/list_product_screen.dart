@@ -9,7 +9,7 @@ import '../bloc/list_product_bloc.dart';
 import '../bloc/list_product_event.dart';
 import '../bloc/list_product_state.dart';
 import '../../../../../widget/sidebar.dart';
-import '../../../../../widget/navbar.dart';
+import '../../../../../widget/navbar_pegawai_gudang.dart';
 
 class ListProductScreen extends StatefulWidget {
   const ListProductScreen({super.key});

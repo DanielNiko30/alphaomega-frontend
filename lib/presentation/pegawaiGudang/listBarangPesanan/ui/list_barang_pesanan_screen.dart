@@ -6,7 +6,7 @@ import '../bloc/list_barang_pesanan_bloc.dart';
 import '../bloc/list_barang_pesanan_event.dart';
 import '../bloc/list_barang_pesanan_state.dart';
 import '../../../../model/transaksiJual/htrans_jual_model.dart';
-import '../../../../widget/navbar.dart';
+import '../../../../widget/navbar_pegawai_gudang.dart';
 
 class ListBarangPesananScreen extends StatefulWidget {
   const ListBarangPesananScreen({super.key});

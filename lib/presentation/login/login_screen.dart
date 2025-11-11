@@ -63,12 +63,21 @@ class _LoginScreenState extends State<LoginScreen> {
         await box.write("role", role);
         await box.write("token", token);
 
-        // 🔹 Arahkan ke chooseRole
-        Navigator.pushReplacementNamed(
-          context,
-          '/chooseRole',
-          arguments: {"id_user": idUser, "role": role, "token": token},
-        );
+        // 🔹 Arahkan sesuai role
+        if (role == "pegawai online") {
+          Navigator.pushReplacementNamed(
+            context,
+            '/shopeeOrders',
+            arguments: {"id_user": idUser, "role": role, "token": token},
+          );
+        } else {
+          // 🔹 Default ke chooseRole
+          Navigator.pushReplacementNamed(
+            context,
+            '/chooseRole',
+            arguments: {"id_user": idUser, "role": role, "token": token},
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login gagal. Cek username/password')),

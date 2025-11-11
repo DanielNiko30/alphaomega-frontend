@@ -15,6 +15,13 @@ import 'controller/admin/product_controller.dart';
 import 'presentation/admin/laporan/laporanPembelian/bloc/laporan_pembelian_bloc.dart';
 import 'presentation/admin/laporan/laporanPembelian/bloc/laporan_pembelian_event.dart';
 import 'presentation/admin/laporan/laporanPembelian/ui/laporan_pembelian_screen.dart';
+import 'presentation/admin/masterPesanan/detailOrderLazada/bloc/detail_order_lazada_bloc.dart';
+import 'presentation/admin/masterPesanan/detailOrderLazada/bloc/detail_order_lazada_event.dart';
+import 'presentation/admin/masterPesanan/detailOrderLazada/ui/detail_order_lazada_screen.dart'
+    show LazadaOrderDetailPage;
+import 'presentation/admin/masterPesanan/detailOrderShopee/bloc/detail_order_shopee_bloc.dart';
+import 'presentation/admin/masterPesanan/detailOrderShopee/bloc/detail_order_shopee_event.dart';
+import 'presentation/admin/masterPesanan/detailOrderShopee/ui/detail_order_shopee_screen.dart';
 import 'presentation/admin/masterPesanan/orderLazada/bloc/order_lazada_bloc.dart';
 import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_bloc.dart';
 import 'presentation/admin/masterPesanan/orderShopee/bloc/order_shopee_event.dart';
@@ -163,7 +170,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return OverlaySupport.global(
-      // ✅ Tambahkan overlay di sini
       child: MaterialApp(
         title: 'Flutter Demo',
         navigatorKey: navigatorKey,
@@ -265,11 +271,50 @@ class MyApp extends StatelessWidget {
                     ShopeeOrdersBloc()..add(FetchShopeeOrders()),
                 child: const ShopeeOrdersScreen(),
               ),
+          '/shopeeOrderDetail': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments as Map?;
+            final orderSn = args?['orderSn'] as String?;
+
+            if (orderSn == null || orderSn.isEmpty) {
+              return Scaffold(
+                appBar: AppBar(title: const Text("Shopee Order Detail")),
+                body: const Center(
+                    child: Text("Error: Order SN tidak ditemukan")),
+              );
+            }
+
+            return BlocProvider(
+              create: (context) =>
+                  ShopeeOrderDetailBloc()..add(FetchShopeeOrderDetail(orderSn)),
+              child: ShopeeOrderDetailPage(orderSn: orderSn),
+            );
+          },
           '/lazadaOrders': (context) => BlocProvider(
                 create: (context) =>
                     LazadaOrdersBloc()..add(FetchLazadaOrders()),
                 child: const LazadaOrdersScreen(),
               ),
+
+          // ✅ Route baru: Lazada Order Detail
+          '/lazadaOrderDetail': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments as Map?;
+            final orderId = args?['orderId'] as String?;
+
+            if (orderId == null || orderId.isEmpty) {
+              return Scaffold(
+                appBar: AppBar(title: const Text("Lazada Order Detail")),
+                body: const Center(
+                    child: Text("Error: Order ID tidak ditemukan")),
+              );
+            }
+
+            return BlocProvider(
+              create: (context) =>
+                  LazadaOrderDetailBloc()..add(FetchLazadaOrderDetail(orderId)),
+              child: LazadaOrderDetailPage(orderId: orderId),
+            );
+          },
+
           '/laporanPembelian': (context) => BlocProvider(
                 create: (_) => LaporanPembelianBloc(LaporanController()),
                 child: const LaporanPembelianScreen(),

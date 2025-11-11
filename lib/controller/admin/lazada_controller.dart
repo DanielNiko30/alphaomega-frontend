@@ -118,6 +118,37 @@ class LazadaController {
     }
   }
 
+  Future<Map<String, dynamic>> getFullOrderDetailLazada(String orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/order/detail?order_id=$orderId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      print("🔹 [LazadaController] Response status: ${response.statusCode}");
+      print("🔹 [LazadaController] Raw response body:");
+      print(response.body); // 👈 log seluruh isi body untuk debug
+
+      if (response.statusCode == 200) {
+        final jsonBody = json.decode(response.body);
+
+        if (jsonBody is Map<String, dynamic>) {
+          return jsonBody;
+        } else {
+          print("⚠️ Response bukan Map<String, dynamic>");
+          throw Exception("Format response tidak valid (bukan object JSON)");
+        }
+      } else {
+        throw Exception(
+            "Gagal ambil detail order (status: ${response.statusCode})");
+      }
+    } catch (e, stack) {
+      print("❌ Error di getFullOrderDetailLazada: $e");
+      print(stack);
+      rethrow;
+    }
+  }
+
   Future<List<LazadaOrder>> getPendingOrders() async {
     final url = Uri.parse('$baseUrl/orders/full');
     final response = await http.get(url);

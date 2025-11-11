@@ -12,7 +12,8 @@ import '../../model/orderOnline/shipping_parameter_model.dart';
 import '../../model/orderOnline/shopee_order_model.dart';
 import '../../model/product/shopee_product_info.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import '../../utils/download_pdf_stub.dart' if (dart.library.html) '../../utils/download_pdf_web.dart';
+import '../../utils/download_pdf_stub.dart'
+    if (dart.library.html) '../../utils/download_pdf_web.dart';
 
 class ShopeeController {
   static const String baseUrl = "https://tokalphaomegaploso.my.id/api/shopee";
@@ -274,20 +275,32 @@ class ShopeeController {
   }
 
   static Future<Map<String, dynamic>> getOrderDetail(String orderSn) async {
-    final url = Uri.parse('$baseUrl/orders/$orderSn');
+    final url = Uri.parse('$baseUrl/order-detail?order_sn_list=$orderSn');
     final resp = await http.get(url);
 
     if (resp.statusCode == 200) {
       final body = jsonDecode(resp.body);
 
       if (body['success'] != true || body['data'] == null) {
-        throw Exception("Response getOrderDetail tidak valid: ${resp.body}");
+        print("📦 Response tidak valid: ${resp.body}");
+        throw Exception("Response getOrderDetail tidak valid");
       }
 
-      return body['data'];
+      final data = body['data'];
+
+      // ✅ Cek apakah data adalah List dan berisi elemen
+      if (data is List &&
+          data.isNotEmpty &&
+          data.first is Map<String, dynamic>) {
+        return data.first as Map<String, dynamic>;
+      } else {
+        print("📦 Format data tidak sesuai: ${body['data']}");
+        throw Exception("Format data tidak sesuai (data kosong atau salah)");
+      }
     } else {
       throw Exception(
-          'Gagal mengambil detail order (${resp.statusCode}): ${resp.body}');
+        'Gagal mengambil detail order (${resp.statusCode}): ${resp.body}',
+      );
     }
   }
 
