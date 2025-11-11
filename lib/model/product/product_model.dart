@@ -42,4 +42,6 @@ class Product {
       'stok': stokList.map((stok) => stok.toJson()).toList(),
     };
   }
+
+  void operator [](String other) {}
 }

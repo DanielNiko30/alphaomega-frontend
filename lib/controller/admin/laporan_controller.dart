@@ -1,134 +1,123 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../../model/laporan/laporan_model.dart';
 
 class LaporanController {
-  final String baseUrl =
-      "https://tokalphaomegaploso.my.id/api/laporan"; // ganti sesuai backendmu
+  static const String baseUrl = "https://tokalphaomegaploso.my.id/api/laporan";
 
-  /// =====================================
-  /// 📊 LAPORAN PENJUALAN
-  /// =====================================
-  Future<LaporanResponse<LaporanTransaksi>> fetchLaporanPenjualan({
-    required String startDate,
-    required String endDate,
-    String groupBy = 'day',
-  }) async {
-    final url = Uri.parse(
-        '$baseUrl/penjualan?startDate=$startDate&endDate=$endDate&groupBy=$groupBy');
-    final res = await http.get(url);
-
-    if (res.statusCode == 200) {
-      final jsonRes = jsonDecode(res.body);
-      return LaporanResponse.fromJson(
-        jsonRes,
-        (e) => LaporanTransaksi.fromJson(e),
+  /// =========================
+  /// LAPORAN PENJUALAN
+  /// =========================
+  static Future<Map<String, dynamic>> getLaporanPenjualan(
+      String startDate, String endDate) async {
+    try {
+      final response = await Dio().get(
+        "$baseUrl/penjualan",
+        queryParameters: {"startDate": startDate, "endDate": endDate},
       );
-    } else {
-      throw Exception('Gagal mengambil laporan penjualan');
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception("Gagal mengambil laporan penjualan");
+      }
+    } catch (e) {
+      throw Exception("Error getLaporanPenjualan: $e");
     }
   }
 
-  /// 📦 LAPORAN PENJUALAN PER PRODUK
-  Future<LaporanResponse<LaporanProduk>> fetchLaporanPenjualanProduk({
-    required String startDate,
-    required String endDate,
-  }) async {
-    final url = Uri.parse(
-        '$baseUrl/penjualan-produk?startDate=$startDate&endDate=$endDate');
-    final res = await http.get(url);
-
-    if (res.statusCode == 200) {
-      final jsonRes = jsonDecode(res.body);
-      return LaporanResponse.fromJson(
-        jsonRes,
-        (e) => LaporanProduk.fromJson(e),
+  static Future<Map<String, dynamic>> getLaporanPenjualanHarian(
+      String tanggal) async {
+    try {
+      final response = await Dio().get(
+        "$baseUrl/penjualan/harian",
+        queryParameters: {"tanggal": tanggal},
       );
-    } else {
-      throw Exception('Gagal mengambil laporan penjualan produk');
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception("Gagal mengambil laporan penjualan harian");
+      }
+    } catch (e) {
+      throw Exception("Error getLaporanPenjualanHarian: $e");
     }
   }
 
-  /// 🧾 LAPORAN PENJUALAN DETAIL
-  Future<LaporanResponse<LaporanDetail>> fetchLaporanPenjualanDetail({
-    required String startDate,
-    required String endDate,
-  }) async {
-    final url = Uri.parse(
-        '$baseUrl/penjualan-detail?startDate=$startDate&endDate=$endDate');
-    final res = await http.get(url);
-
-    if (res.statusCode == 200) {
-      final jsonRes = jsonDecode(res.body);
-      return LaporanResponse.fromJson(
-        jsonRes,
-        (e) => LaporanDetail.fromJson(e),
+  /// =========================
+  /// LAPORAN PEMBELIAN
+  /// =========================
+  static Future<Map<String, dynamic>> getLaporanPembelian(
+      String startDate, String endDate) async {
+    try {
+      final response = await Dio().get(
+        "$baseUrl/pembelian",
+        queryParameters: {"startDate": startDate, "endDate": endDate},
       );
-    } else {
-      throw Exception('Gagal mengambil laporan penjualan detail');
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception("Gagal mengambil laporan pembelian");
+      }
+    } catch (e) {
+      throw Exception("Error getLaporanPembelian: $e");
     }
   }
 
-  /// =====================================
-  /// 🛒 LAPORAN PEMBELIAN
-  /// =====================================
-  Future<LaporanResponse<LaporanTransaksi>> fetchLaporanPembelian({
-    required String startDate,
-    required String endDate,
-    String groupBy = 'day',
-  }) async {
-    final url = Uri.parse(
-        '$baseUrl/pembelian?startDate=$startDate&endDate=$endDate&groupBy=$groupBy');
-    final res = await http.get(url);
-
-    if (res.statusCode == 200) {
-      final jsonRes = jsonDecode(res.body);
-      return LaporanResponse.fromJson(
-        jsonRes,
-        (e) => LaporanTransaksi.fromJson(e),
+  static Future<Map<String, dynamic>> getLaporanPembelianHarian(
+      String tanggal) async {
+    try {
+      final response = await Dio().get(
+        "$baseUrl/pembelian/harian",
+        queryParameters: {"tanggal": tanggal},
       );
-    } else {
-      throw Exception('Gagal mengambil laporan pembelian');
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception("Gagal mengambil laporan pembelian harian");
+      }
+    } catch (e) {
+      throw Exception("Error getLaporanPembelianHarian: $e");
     }
   }
 
-  /// 📦 LAPORAN PEMBELIAN PER PRODUK
-  Future<LaporanResponse<LaporanProduk>> fetchLaporanPembelianProduk({
-    required String startDate,
-    required String endDate,
-  }) async {
-    final url = Uri.parse(
-        '$baseUrl/pembelian-produk?startDate=$startDate&endDate=$endDate');
-    final res = await http.get(url);
-
-    if (res.statusCode == 200) {
-      final jsonRes = jsonDecode(res.body);
-      return LaporanResponse.fromJson(
-        jsonRes,
-        (e) => LaporanProduk.fromJson(e),
+  /// =========================
+  /// LAPORAN STOK
+  /// =========================
+  static Future<Map<String, dynamic>> getLaporanStok(
+      String startDate, String endDate) async {
+    try {
+      final response = await Dio().get(
+        "$baseUrl/stok",
+        queryParameters: {"startDate": startDate, "endDate": endDate},
       );
-    } else {
-      throw Exception('Gagal mengambil laporan pembelian produk');
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception("Gagal mengambil laporan stok");
+      }
+    } catch (e) {
+      throw Exception("Error getLaporanStok: $e");
     }
   }
 
-  /// 🧾 LAPORAN PEMBELIAN DETAIL
-  Future<LaporanResponse<LaporanDetail>> fetchLaporanPembelianDetail({
-    required String startDate,
-    required String endDate,
-  }) async {
-    final url = Uri.parse(
-        '$baseUrl/pembelian-detail?startDate=$startDate&endDate=$endDate');
-    final res = await http.get(url);
-
-    if (res.statusCode == 200) {
-      final jsonRes = jsonDecode(res.body);
-      return LaporanResponse.fromJson(
-        jsonRes,
-        (e) => LaporanDetail.fromJson(e),
+  static Future<Map<String, dynamic>> getLaporanStokHarian(
+      String tanggal) async {
+    try {
+      final response = await Dio().get(
+        "$baseUrl/stok/harian",
+        queryParameters: {"tanggal": tanggal},
       );
-    } else {
-      throw Exception('Gagal mengambil laporan pembelian detail');
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception("Gagal mengambil laporan stok harian");
+      }
+    } catch (e) {
+      throw Exception("Error getLaporanStokHarian: $e");
     }
   }
 }

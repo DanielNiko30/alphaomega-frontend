@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/presentation/admin/laporan/laporanPenjualan/bloc/laporan_penjualan_bloc.dart';
+import 'package:frontend/presentation/admin/laporan/laporanPenjualan/ui/laporan_penjualan_screen.dart';
+import 'package:frontend/presentation/admin/laporan/laporanStok/bloc/laporan_stok_bloc.dart';
+import 'package:frontend/presentation/admin/laporan/laporanStok/ui/laporan_stok_screen.dart';
+import 'package:frontend/presentation/admin/masterTransaksi/historiTransaksiBeli/ui/histori_trans_beli_screen.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -268,6 +273,15 @@ class MyApp extends StatelessWidget {
           '/laporanPembelian': (context) => BlocProvider(
                 create: (_) => LaporanPembelianBloc(LaporanController()),
                 child: const LaporanPembelianScreen(),
+              ),
+          '/historiPembelian': (context) => const LaporanBeliScreen(),
+          '/laporanPenjualan': (context) => BlocProvider(
+                create: (_) => LaporanPenjualanBloc(LaporanController()),
+                child: const LaporanPenjualanScreen(),
+              ),
+          '/laporanStok': (context) => BlocProvider(
+                create: (_) => LaporanStokBloc(LaporanController()),
+                child: const LaporanStokScreen(),
               ),
         },
         home: const LoginScreen(),

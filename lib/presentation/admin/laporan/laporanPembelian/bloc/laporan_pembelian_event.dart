@@ -8,16 +8,16 @@ abstract class LaporanPembelianEvent extends Equatable {
 }
 
 class LoadLaporanPembelian extends LaporanPembelianEvent {
+  final String mode; // 'harian' atau 'per_nota'
   final DateTime startDate;
-  final DateTime endDate;
-  final String mode; // 'periode', 'produk', 'detail'
+  final DateTime? endDate; // endDate hanya untuk per_nota
 
   const LoadLaporanPembelian({
-    required this.startDate,
-    required this.endDate,
     required this.mode,
+    required this.startDate,
+    this.endDate,
   });
 
   @override
-  List<Object?> get props => [startDate, endDate, mode];
+  List<Object?> get props => [mode, startDate, endDate];
 }

@@ -11,19 +11,21 @@ class LaporanPembelianInitial extends LaporanPembelianState {}
 
 class LaporanPembelianLoading extends LaporanPembelianState {}
 
-class LaporanPembelianLoaded<T> extends LaporanPembelianState {
-  final List<T> data;
-  final Map<String, dynamic>? summary;
+class LaporanPembelianLoaded extends LaporanPembelianState {
   final String mode;
+  final List<Map<String, dynamic>> data;
+  final int totalPembelian;
+  final String periode; // hanya untuk per_nota
 
   const LaporanPembelianLoaded({
-    required this.data,
-    this.summary,
     required this.mode,
+    required this.data,
+    required this.totalPembelian,
+    required this.periode,
   });
 
   @override
-  List<Object?> get props => [data, summary ?? {}, mode];
+  List<Object?> get props => [mode, data, totalPembelian, periode];
 }
 
 class LaporanPembelianError extends LaporanPembelianState {

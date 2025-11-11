@@ -1,140 +1,175 @@
-import 'dart:convert';
+// laporan_model.dart
+class DetailTransaksi {
+  final String namaProduct;
+  final String satuan;
+  final int jumlah;
+  final int hargaJual;
+  final int hargaBeli;
+  final int subtotal;
+  final int hpp;
+  final int untung;
 
-/// ================================
-/// 📊 MODEL LAPORAN PENJUALAN / PEMBELIAN PER PERIODE
-/// ================================
-class LaporanTransaksi {
-  final String periode;
-  final int jumlahTransaksi;
-  final double total;
-
-  LaporanTransaksi({
-    required this.periode,
-    required this.jumlahTransaksi,
-    required this.total,
-  });
-
-  factory LaporanTransaksi.fromJson(Map<String, dynamic> json) {
-    return LaporanTransaksi(
-      periode: json['periode'] ?? '',
-      jumlahTransaksi: int.tryParse(json['jumlah_transaksi'].toString()) ?? 0,
-      total: double.tryParse(json['total_penjualan']?.toString() ??
-              json['total_pembelian']?.toString() ??
-              '0') ??
-          0,
-    );
-  }
-}
-
-/// ================================
-/// 📦 MODEL LAPORAN PER PRODUK
-/// ================================
-class LaporanProduk {
-  final int idProduk;
-  final String namaProduk;
-  final double totalJumlah;
-  final double totalNominal;
-
-  LaporanProduk({
-    required this.idProduk,
-    required this.namaProduk,
-    required this.totalJumlah,
-    required this.totalNominal,
-  });
-
-  factory LaporanProduk.fromJson(Map<String, dynamic> json) {
-    return LaporanProduk(
-      idProduk: int.tryParse(json['id_produk'].toString()) ?? 0,
-      namaProduk:
-          json['produk.nama_product'] ?? json['produk']?['nama_product'] ?? '',
-      totalJumlah: double.tryParse(json['total_terjual']?.toString() ??
-              json['total_terbeli']?.toString() ??
-              '0') ??
-          0,
-      totalNominal: double.tryParse(json['total_penjualan']?.toString() ??
-              json['total_pembelian']?.toString() ??
-              '0') ??
-          0,
-    );
-  }
-}
-
-/// ================================
-/// 🧾 MODEL DETAIL LAPORAN (Header + Detail)
-/// ================================
-class LaporanDetail {
-  final String tanggal;
-  final String noTransaksi;
-  final double totalHarga;
-  final List<LaporanDetailItem> detail;
-
-  LaporanDetail({
-    required this.tanggal,
-    required this.noTransaksi,
-    required this.totalHarga,
-    required this.detail,
-  });
-
-  factory LaporanDetail.fromJson(Map<String, dynamic> json) {
-    final detailList = (json['detail_transaksi'] as List<dynamic>? ?? [])
-        .map((item) => LaporanDetailItem.fromJson(item))
-        .toList();
-
-    return LaporanDetail(
-      tanggal: json['tanggal'] ?? '',
-      noTransaksi:
-          json['no_invoice'] ?? json['id_htrans_beli']?.toString() ?? '',
-      totalHarga: double.tryParse(json['total_harga']?.toString() ?? '0') ?? 0,
-      detail: detailList,
-    );
-  }
-}
-
-class LaporanDetailItem {
-  final String namaProduk;
-  final double jumlah;
-  final double subtotal;
-
-  LaporanDetailItem({
-    required this.namaProduk,
+  DetailTransaksi({
+    required this.namaProduct,
+    required this.satuan,
     required this.jumlah,
+    required this.hargaJual,
+    required this.hargaBeli,
     required this.subtotal,
+    required this.hpp,
+    required this.untung,
   });
 
-  factory LaporanDetailItem.fromJson(Map<String, dynamic> json) {
-    return LaporanDetailItem(
-      namaProduk: json['produk']?['nama_product'] ?? '',
-      jumlah: double.tryParse(json['jumlah_barang']?.toString() ?? '0') ?? 0,
-      subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
+  factory DetailTransaksi.fromJson(Map<String, dynamic> json) {
+    return DetailTransaksi(
+      namaProduct: json['nama_product'] ?? "-",
+      satuan: json['satuan'] ?? "-",
+      jumlah: json['jumlah'] ?? 0,
+      hargaJual: json['harga_jual'] ?? 0,
+      hargaBeli: json['harga_beli'] ?? 0,
+      subtotal: json['subtotal'] ?? 0,
+      hpp: json['hpp'] ?? 0,
+      untung: json['untung'] ?? 0,
     );
   }
 }
 
-/// ================================
-/// 🔁 RESPONSE WRAPPER
-/// ================================
-class LaporanResponse<T> {
-  final bool success;
-  final String message;
-  final List<T> data;
-  final Map<String, dynamic>? summary;
+class LaporanNota {
+  final String idTransaksi;
+  final String tanggal;
+  final String metodePembayaran;
+  final List<DetailTransaksi> detail;
+  final int totalPenjualan;
+  final int totalHpp;
+  final int totalUntung;
 
-  LaporanResponse({
-    required this.success,
-    required this.message,
-    required this.data,
-    this.summary,
+  LaporanNota({
+    required this.idTransaksi,
+    required this.tanggal,
+    required this.metodePembayaran,
+    required this.detail,
+    required this.totalPenjualan,
+    required this.totalHpp,
+    required this.totalUntung,
   });
 
-  factory LaporanResponse.fromJson(
-      Map<String, dynamic> json, T Function(Map<String, dynamic>) fromJsonT) {
-    return LaporanResponse<T>(
-      success: json['success'] ?? false,
-      message: json['message'] ?? '',
-      data: (json['data'] as List<dynamic>)
-          .map((e) => fromJsonT(e as Map<String, dynamic>))
-          .toList(),
-      summary: json['summary'],
+  factory LaporanNota.fromJson(Map<String, dynamic> json) {
+    var detailList = <DetailTransaksi>[];
+    if (json['detail'] != null) {
+      detailList = List<DetailTransaksi>.from(
+          json['detail'].map((x) => DetailTransaksi.fromJson(x)));
+    }
+    return LaporanNota(
+      idTransaksi: json['id_htrans_jual'] ?? "-",
+      tanggal: json['tanggal'] ?? "-",
+      metodePembayaran: json['metode_pembayaran'] ?? "-",
+      detail: detailList,
+      totalPenjualan: json['total_nota']?['total_penjualan'] ?? 0,
+      totalHpp: json['total_nota']?['total_hpp'] ?? 0,
+      totalUntung: json['total_nota']?['total_untung'] ?? 0,
+    );
+  }
+}
+
+class LaporanPembelian {
+  final String waktu;
+  final String barang;
+  final String pemasok;
+  final int jumlah;
+  final String satuan;
+  final int hargaBeli;
+  final int subtotal;
+  final String pembayaran;
+  final String invoice;
+
+  LaporanPembelian({
+    required this.waktu,
+    required this.barang,
+    required this.pemasok,
+    required this.jumlah,
+    required this.satuan,
+    required this.hargaBeli,
+    required this.subtotal,
+    required this.pembayaran,
+    required this.invoice,
+  });
+
+  factory LaporanPembelian.fromJson(Map<String, dynamic> json) {
+    return LaporanPembelian(
+      waktu: json['waktu'] ?? "-",
+      barang: json['barang'] ?? "-",
+      pemasok: json['pemasok'] ?? "-",
+      jumlah: json['jumlah'] ?? 0,
+      satuan: json['satuan'] ?? "-",
+      hargaBeli: json['harga_beli'] ?? 0,
+      subtotal: json['subtotal'] ?? 0,
+      pembayaran: json['pembayaran'] ?? "-",
+      invoice: json['invoice'] ?? "-",
+    );
+  }
+}
+
+class LaporanStokDetail {
+  final String tanggal;
+  final int jumlah;
+  final String invoice;
+
+  LaporanStokDetail({
+    required this.tanggal,
+    required this.jumlah,
+    required this.invoice,
+  });
+
+  factory LaporanStokDetail.fromJson(Map<String, dynamic> json) {
+    return LaporanStokDetail(
+      tanggal: json['tanggal'] ?? "-",
+      jumlah: json['jumlah'] ?? 0,
+      invoice: json['invoice'] ?? "-",
+    );
+  }
+}
+
+class LaporanStok {
+  final String namaProduct;
+  final int stokAwal;
+  final int totalMasuk;
+  final List<LaporanStokDetail> detailMasuk;
+  final int totalKeluar;
+  final List<LaporanStokDetail> detailKeluar;
+  final int stokAkhir;
+
+  LaporanStok({
+    required this.namaProduct,
+    required this.stokAwal,
+    required this.totalMasuk,
+    required this.detailMasuk,
+    required this.totalKeluar,
+    required this.detailKeluar,
+    required this.stokAkhir,
+  });
+
+  factory LaporanStok.fromJson(Map<String, dynamic> json) {
+    var masuk = <LaporanStokDetail>[];
+    var keluar = <LaporanStokDetail>[];
+
+    if (json['detail_masuk'] != null) {
+      masuk = List<LaporanStokDetail>.from(
+          json['detail_masuk'].map((x) => LaporanStokDetail.fromJson(x)));
+    }
+
+    if (json['detail_keluar'] != null) {
+      keluar = List<LaporanStokDetail>.from(
+          json['detail_keluar'].map((x) => LaporanStokDetail.fromJson(x)));
+    }
+
+    return LaporanStok(
+      namaProduct: json['nama_product'] ?? "-",
+      stokAwal: json['stok_awal'] ?? 0,
+      totalMasuk: json['total_masuk'] ?? 0,
+      detailMasuk: masuk,
+      totalKeluar: json['total_keluar'] ?? 0,
+      detailKeluar: keluar,
+      stokAkhir: json['stok_akhir'] ?? 0,
     );
   }
 }

@@ -25,10 +25,9 @@ class _SidebarState extends State<Sidebar> {
       child: Drawer(
         child: Column(
           children: <Widget>[
+            // 🔹 Header
             DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Colors.blue,
-              ),
+              decoration: const BoxDecoration(color: Colors.blue),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
@@ -43,7 +42,7 @@ class _SidebarState extends State<Sidebar> {
               ),
             ),
 
-            // 🔹 Bagian Menu
+            // 🔹 Daftar Menu
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -51,16 +50,22 @@ class _SidebarState extends State<Sidebar> {
                   _buildListTile(Icons.dashboard, 'Dashboard', () {
                     Navigator.pushNamed(context, '/dashboard');
                   }),
+
                   if (!isCollapsed)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text('Master Data',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text(
+                        'Master Data',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
                     ),
+
                   _buildListTile(Icons.person, 'Master User', () {
                     Navigator.pushNamed(context, '/masterUser');
                   }),
+
+                  // 🔹 Master Produk
                   ExpansionTile(
                     leading: const Icon(Icons.inventory),
                     title: isCollapsed
@@ -84,26 +89,80 @@ class _SidebarState extends State<Sidebar> {
                       ),
                     ],
                   ),
+
                   _buildListTile(Icons.local_shipping, 'Master Supplier', () {
                     Navigator.pushNamed(context, '/masterSupplier');
                   }),
+
+                  // 🔹 Transaksi Section
                   if (!isCollapsed)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text('Transaksi',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text(
+                        'Transaksi',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
                     ),
-                  _buildListTile(Icons.shopping_cart, 'Transaksi Pembelian',
-                      () {
-                    Navigator.pushNamed(context, '/transaksiPembelian');
-                  }),
-                  _buildListTile(Icons.sell, 'Transaksi Penjualan', () {
-                    Navigator.pushNamed(context, '/transaksiPenjualan');
-                  }),
-                  _buildListTile(Icons.pending_actions, 'Pesanan Diproses', () {
-                    Navigator.pushNamed(context, '/transaksiPenjualanPending');
-                  }),
+
+                  // 🔹 Transaksi Pembelian (Dropdown)
+                  ExpansionTile(
+                    leading: const Icon(Icons.shopping_cart),
+                    title: isCollapsed
+                        ? const SizedBox.shrink()
+                        : const Text('Transaksi beli'),
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.note_add),
+                        title: isCollapsed
+                            ? null
+                            : const Text('Buat Nota Pembelian'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/transaksiPembelian');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.history),
+                        title: isCollapsed
+                            ? null
+                            : const Text('Histori Pembelian'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/historiPembelian');
+                        },
+                      ),
+                    ],
+                  ),
+
+                  // 🔹 Transaksi Penjualan (Dropdown)
+                  ExpansionTile(
+                    leading: const Icon(Icons.sell),
+                    title: isCollapsed
+                        ? const SizedBox.shrink()
+                        : const Text('Transaksi jual'),
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.note_add_outlined),
+                        title: isCollapsed
+                            ? null
+                            : const Text('Buat Nota Penjualan'),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/transaksiPenjualan');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.pending_actions),
+                        title: isCollapsed
+                            ? null
+                            : const Text('Penjualan Pending'),
+                        onTap: () {
+                          Navigator.pushNamed(
+                              context, '/transaksiPenjualanPending');
+                        },
+                      ),
+                    ],
+                  ),
+
+                  // 🔹 Pesanan Online
                   ExpansionTile(
                     leading: const Icon(Icons.shopping_bag),
                     title: isCollapsed
@@ -121,19 +180,23 @@ class _SidebarState extends State<Sidebar> {
                         leading: const Icon(Icons.shopping_cart),
                         title: isCollapsed ? null : const Text('Lazada'),
                         onTap: () {
-                          Navigator.pushNamed(context,
-                              '/lazadaOrders'); // nanti bisa dibuat route Lazada
+                          Navigator.pushNamed(context, '/lazadaOrders');
                         },
                       ),
                     ],
                   ),
+
+                  // 🔹 Laporan Section
                   if (!isCollapsed)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text('Laporan',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text(
+                        'Laporan',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
                     ),
+
                   _buildListTile(Icons.receipt_long, 'Laporan Pembelian', () {
                     Navigator.pushNamed(context, '/laporanPembelian');
                   }),
@@ -147,7 +210,7 @@ class _SidebarState extends State<Sidebar> {
               ),
             ),
 
-            // 🔹 Tombol Logout di bawah
+            // 🔹 Tombol Logout
             SafeArea(
               child: ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),

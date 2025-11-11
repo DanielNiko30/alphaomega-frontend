@@ -28,12 +28,12 @@ class DTransBeli {
 
   factory DTransBeli.fromJson(Map<String, dynamic> json) {
     return DTransBeli(
-      idProduk: json["id_produk"],
-      jumlahBarang: json["jumlah_barang"],
-      hargaSatuan: json["harga_satuan"],
-      subtotal: json["subtotal"],
-      diskonBarang: json["diskon_barang"], // ✅ harus sesuai toJson
-      satuan: json["satuan"],
+      idProduk: json["id_produk"] ?? '',
+      jumlahBarang: json["jumlah_barang"] ?? 0,
+      satuan: json["satuan"] ?? '',
+      subtotal: json["subtotal"] ?? 0,
+      diskonBarang: json["diskon_barang"] ?? 0,
+      hargaSatuan: json["harga_satuan"] ?? 0,
     );
   }
 }
