@@ -11,7 +11,6 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
     on<FetchProducts>(_onFetchProducts);
     on<FetchProductsWithStok>(_onFetchProductsWithStok);
     on<KonversiStokEvent>(_onKonversiStok);
-    
   }
 
   /// === Ambil semua produk ===
@@ -42,7 +41,11 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
         throw Exception("Request timeout saat memuat produk + stok");
       });
 
-      emit(ProductWithStokLoaded(products));
+      if (products.isEmpty) {
+        emit(ProductError("Tidak ada produk ditemukan"));
+      } else {
+        emit(ProductWithStokLoaded(products));
+      }
     } catch (e) {
       emit(ProductError("Gagal mengambil data produk dengan stok: $e"));
     }

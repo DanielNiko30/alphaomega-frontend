@@ -32,21 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      // 🔹 Jika login sebagai admin (bypass backend)
-      if (u == "admin" && p == "admin") {
-        final box = GetStorage();
-        await box.write("id_user", "0"); // bisa pakai id fiktif
-        await box.write("role", "admin");
-        await box.write("token", "dummy-token-admin");
-
-        debugPrint("✅ Login sebagai ADMIN");
-
-        Navigator.pushReplacementNamed(context, '/dashboard');
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      // 🔹 Selain admin → cek ke backend
+      // 🔹 Semua login lewat backend, termasuk admin
       final result = await _authController.login(u, p);
 
       if (result != null) {
@@ -63,15 +49,17 @@ class _LoginScreenState extends State<LoginScreen> {
         await box.write("role", role);
         await box.write("token", token);
 
-        // 🔹 Arahkan sesuai role
-        if (role == "pegawai online") {
+        // 🔹 Navigasi sesuai role
+        if (role == "admin") {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } else if (role == "pegawai online") {
           Navigator.pushReplacementNamed(
             context,
             '/shopeeOrders',
             arguments: {"id_user": idUser, "role": role, "token": token},
           );
         } else {
-          // 🔹 Default ke chooseRole
+          // role lain jika ada
           Navigator.pushReplacementNamed(
             context,
             '/chooseRole',

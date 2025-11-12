@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/presentation/admin/laporan/laporanPenjualan/bloc/laporan_penjualan_bloc.dart';
 import 'package:frontend/presentation/admin/laporan/laporanPenjualan/ui/laporan_penjualan_screen.dart';
@@ -7,6 +8,8 @@ import 'package:frontend/presentation/admin/masterTransaksi/historiTransaksiBeli
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:overlay_support/overlay_support.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:overlay_support/overlay_support.dart';
 import 'package:path_provider/path_provider.dart';
 import 'controller/admin/laporan_controller.dart';
@@ -65,84 +68,46 @@ import 'presentation/login/choose_role_screen.dart';
 
 /// ✅ Tambahkan navigatorKey global untuk popup notifikasi
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
+final AudioPlayer audioPlayer = AudioPlayer();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+  final audioPlayer = AudioPlayer();
 
-  // ✅ Inisialisasi OneSignal
+// Inisialisasi OneSignal
   OneSignal.initialize('257845e8-86e4-466e-b8cb-df95a1005a5f');
 
-  // ✅ Minta izin tampilkan notifikasi
-  OneSignal.Notifications.requestPermission(true);
-
-  // ✅ Listener: kalau notifikasi diterima saat app terbuka (foreground)
+// Foreground notifications
+// ✅ App sedang terbuka → tampil + bunyi
   OneSignal.Notifications.addForegroundWillDisplayListener((event) {
-    event.preventDefault(); // kita handle tampilannya sendiri
-
-    final notif = event.notification;
-    debugPrint("📢 Notif diterima: ${notif.title}");
+    final notification = event.notification;
 
     showSimpleNotification(
-      Container(
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.85), // 💙 biru transparan
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(6),
-              child:
-                  const Icon(Icons.notifications_active, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    notif.title ?? 'Notifikasi Baru',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    notif.body ?? '',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      background: Colors
-          .transparent, // supaya background transparan (biar container tampil)
-      autoDismiss: true,
-      duration: const Duration(seconds: 5),
-      slideDismissDirection: DismissDirection.up,
+      Text(notification.title ?? "Notifikasi Baru"),
+      subtitle: Text(notification.body ?? ""),
+      background: Colors.blueAccent,
+    );
+
+    // mainkan suara custom
+    audioPlayer.play(AssetSource('sounds/cashier.mp3'));
+
+    // tampilkan system notification juga
+    event.notification.display();
+  });
+
+// ✅ Klik notifikasi (background / terminated)
+  OneSignal.Notifications.addClickListener((event) {
+    final data = event.notification.additionalData;
+
+    navigatorKey.currentState?.pushNamed(
+      '/detailPesanan',
+      arguments: {
+        'idPesanan': data?['idPesanan'],
+        'namaPembeli': data?['namaPembeli'],
+      },
     );
   });
-
-  // ✅ Listener: kalau user klik notifikasi
-  OneSignal.Notifications.addClickListener((event) {
-    debugPrint('🔔 Notifikasi diklik: ${event.notification.title}');
-  });
-
+  
   runApp(
     MultiBlocProvider(
       providers: [

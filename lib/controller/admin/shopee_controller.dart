@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/model/product/shope_model.dart';
+import 'package:http/http.dart' as box;
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../model/orderOnline/ship_order_response_model.dart';
@@ -17,6 +19,7 @@ import '../../utils/download_pdf_stub.dart'
 
 class ShopeeController {
   static const String baseUrl = "https://tokalphaomegaploso.my.id/api/shopee";
+  final box = GetStorage();
 
   static Future<Map<String, dynamic>> shopeeCallback(
       String code, String shopId) async {
@@ -383,7 +386,7 @@ class ShopeeController {
     }
   }
 
-  Future<ShipOrderResponse?> setPickup({
+  Future<Map<String, dynamic>?> setPickup({
     required String orderSn,
     required int addressId,
     required String pickupTimeId,
@@ -391,9 +394,19 @@ class ShopeeController {
     try {
       final url = Uri.parse('$baseUrl/ship-order/pickup');
 
+      // 🔹 Ambil token dari storage dan trim
+      final token = box.read("token")?.toString().trim();
+      if (token == null || token.isEmpty) {
+        print('❌ Token tidak ditemukan, user harus login ulang');
+        return null;
+      }
+
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
         body: jsonEncode({
           "order_sn": orderSn,
           "address_id": addressId,
@@ -402,8 +415,11 @@ class ShopeeController {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return ShipOrderResponse.fromJson(data);
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        print(
+            '❌ Unauthorized, token mungkin kadaluarsa atau salah: ${response.body}');
+        return null;
       } else {
         print('❌ Gagal set pickup: ${response.body}');
         return null;
@@ -414,19 +430,33 @@ class ShopeeController {
     }
   }
 
-  Future<ShipOrderResponse?> setDropoff(String orderSn) async {
+  /// ====== SET DROPOFF ======
+  Future<Map<String, dynamic>?> setDropoff(String orderSn) async {
     try {
       final url = Uri.parse('$baseUrl/ship-order/dropoff');
 
+      // 🔹 Ambil token dari storage dan trim
+      final token = box.read("token")?.toString().trim();
+      if (token == null || token.isEmpty) {
+        print('❌ Token tidak ditemukan, user harus login ulang');
+        return null;
+      }
+
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
         body: jsonEncode({"order_sn": orderSn}),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return ShipOrderResponse.fromJson(data);
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        print(
+            '❌ Unauthorized, token mungkin kadaluarsa atau salah: ${response.body}');
+        return null;
       } else {
         print('❌ Gagal set dropoff: ${response.body}');
         return null;
