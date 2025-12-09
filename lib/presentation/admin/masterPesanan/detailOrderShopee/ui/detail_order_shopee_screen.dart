@@ -5,6 +5,7 @@ import '../../../../../widget/navbar_pegawai_online.dart';
 import '../bloc/detail_order_shopee_bloc.dart';
 import '../bloc/detail_order_shopee_event.dart';
 import '../bloc/detail_order_shopee_state.dart';
+import 'package:intl/intl.dart';
 
 class ShopeeOrderDetailPage extends StatelessWidget {
   final String orderSn;
@@ -156,6 +157,13 @@ class ShopeeOrderDetailPage extends StatelessWidget {
   }
 
   Widget _buildAnimatedHeader(Map<String, dynamic> order) {
+    // 🔹 Format total amount ke Rp 30.000,00
+    final totalAmount = order['total_amount'] != null
+        ? NumberFormat.currency(
+                locale: 'id_ID', symbol: 'Rp ', decimalDigits: 2)
+            .format(order['total_amount'])
+        : 'Rp 0,00';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -192,7 +200,7 @@ class ShopeeOrderDetailPage extends StatelessWidget {
           _buildInfoRow("Status", order['status']),
           const Divider(color: Colors.white54, height: 18),
           Text(
-            "Total: Rp ${order['total_amount'] ?? '0'}",
+            "Total: $totalAmount", // 🔹 pakai totalAmount yang sudah diformat
             style: const TextStyle(
                 color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
           ),
@@ -267,6 +275,13 @@ class ShopeeOrderDetailPage extends StatelessWidget {
       } catch (_) {}
     }
 
+    // 🔹 Format harga ke Rp 30.000,00
+    final price = item['price'] != null
+        ? NumberFormat.currency(
+                locale: 'id_ID', symbol: 'Rp ', decimalDigits: 2)
+            .format(item['price'])
+        : '-';
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
@@ -317,7 +332,7 @@ class ShopeeOrderDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Rp ${item['price'] ?? '-'}",
+                  price, // 🔹 gunakan price yang sudah diformat
                   style: TextStyle(
                       color: Colors.green.shade700,
                       fontWeight: FontWeight.bold),

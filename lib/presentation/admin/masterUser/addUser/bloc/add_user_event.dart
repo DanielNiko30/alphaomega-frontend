@@ -11,6 +11,8 @@ class SubmitAddUser extends AddUserEvent {
   final String password;
   final String role;
   final String noTelp;
+  final String alamat;
+  final String jenisKelamin;
 
   SubmitAddUser({
     required this.username,
@@ -18,8 +20,10 @@ class SubmitAddUser extends AddUserEvent {
     required this.password,
     required this.role,
     required this.noTelp,
+    required this.alamat,
+    required this.jenisKelamin,
   });
 
   @override
-  List<Object?> get props => [username, name, password, role, noTelp];
+  List<Object?> get props => [username, name, password, role, noTelp, alamat, jenisKelamin];
 }

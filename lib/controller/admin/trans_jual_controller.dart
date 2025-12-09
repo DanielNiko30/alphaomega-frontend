@@ -194,4 +194,22 @@ class TransaksiJualController {
       throw Exception("Error mengambil transaksi berdasarkan tanggal: $e");
     }
   }
+
+  static Future<Response> updateStatusTransaction(String idHtransJual) async {
+    try {
+      final response = await Dio().put(
+        "$baseUrl/update-status/$idHtransJual",
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        return response;
+      } else {
+        throw Exception(
+            "Gagal mengubah status transaksi: ${response.statusMessage}");
+      }
+    } catch (e) {
+      throw Exception("Error saat update status transaksi: $e");
+    }
+  }
 }

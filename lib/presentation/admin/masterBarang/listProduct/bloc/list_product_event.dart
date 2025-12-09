@@ -32,3 +32,5 @@ class DeleteStokEvent extends EditProductEvent {
   @override
   List<Object?> get props => [idStok];
 }
+
+

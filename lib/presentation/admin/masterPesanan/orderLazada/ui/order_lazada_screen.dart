@@ -69,8 +69,13 @@ class _LazadaOrdersScreenState extends State<LazadaOrdersScreen> {
             return Scaffold(
               appBar: isMobile
                   ? AppBar(
-                      title: const Text("Pesanan Lazada"),
-                      backgroundColor: Colors.blue,
+                      title: const Text(
+                        "Pesanan Lazada",
+                        style: TextStyle(color: Colors.black),
+                      ),
+                      backgroundColor: Colors.white,
+                      elevation: 0,
+                      automaticallyImplyLeading: false, // ❌ tidak ada back
                     )
                   : null,
 
@@ -118,9 +123,8 @@ class _LazadaOrdersScreenState extends State<LazadaOrdersScreen> {
                                       bloc.currentStatus == "READY_TO_SHIP";
 
                                   return Row(
-                                    mainAxisAlignment: isMobile
-                                        ? MainAxisAlignment.center
-                                        : MainAxisAlignment.start,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.start, // ✅ rata kiri
                                     children: [
                                       ChoiceChip(
                                         label: const Text("Pending"),
@@ -380,7 +384,7 @@ class _LazadaOrdersScreenState extends State<LazadaOrdersScreen> {
                                                       horizontal: 12),
                                                   child: Wrap(
                                                     alignment: isMobile
-                                                        ? WrapAlignment.center
+                                                        ? WrapAlignment.start
                                                         : WrapAlignment.end,
                                                     spacing: 8,
                                                     runSpacing: 8,

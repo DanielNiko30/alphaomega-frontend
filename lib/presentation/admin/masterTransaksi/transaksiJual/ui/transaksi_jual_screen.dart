@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/widget/sidebar.dart';
@@ -17,6 +16,10 @@ class TransJualScreen extends StatefulWidget {
 
 class _TransJualScreenState extends State<TransJualScreen> {
   @override
+  int currentPageProduct = 1;
+  final int productPerPage = 20;
+  String searchQuery = "";
+  String? selectedKategori;
   DateTime? selectedDate;
   void initState() {
     super.initState();
@@ -82,74 +85,194 @@ class _TransJualScreenState extends State<TransJualScreen> {
                                       border: OutlineInputBorder(),
                                     ),
                                     onChanged: (value) {
+                                      setState(() {
+                                        searchQuery = value;
+                                        currentPageProduct =
+                                            1; // reset ke halaman pertama saat search
+                                      });
                                       context
                                           .read<TransJualBloc>()
                                           .add(SearchProductByNameJual(value));
                                     },
                                   ),
                                   const SizedBox(height: 16),
+
+                                  // ============================
+                                  // 🔥 FILTER + PAGINATION MODEL
+                                  // ============================
+
                                   Expanded(
-                                    child: GridView.builder(
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 4,
-                                        childAspectRatio: 3 / 4,
-                                        crossAxisSpacing: 12,
-                                        mainAxisSpacing: 12,
-                                      ),
-                                      itemCount: state.products.length,
-                                      itemBuilder: (context, index) {
-                                        final product = state.products[index];
-                                        return Card(
-                                          child: InkWell(
-                                            onTap: () {
-                                              context
-                                                  .read<TransJualBloc>()
-                                                  .add(AddProduct(
-                                                    id: product['id'],
-                                                    name: product['name'],
-                                                    image: product['image'],
-                                                    quantity: 1,
-                                                    unit: 'pcs',
-                                                    price: 0.0,
-                                                    stok: product['stok'] ?? 0,
-                                                    rowId: '',
-                                                  ));
-                                            },
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                Expanded(
-                                                  child: SizedBox(
-                                                    width: 120,
-                                                    height: 120,
-                                                    child: buildProductImage(
-                                                        product['image']),
-                                                  ),
-                                                ),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Column(
-                                                    children: [
-                                                      Text(product['name'],
-                                                          style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold),
-                                                          textAlign:
-                                                              TextAlign.center),
-                                                    ],
-                                                  ),
-                                                )
-                                              ],
-                                            ),
+                                    child: Builder(
+                                      builder: (context) {
+                                        // 1) Ambil semua produk
+                                        final allProducts = state.products;
+
+                                        // 2) Filter berdasarkan searchQuery
+                                        final filteredProducts =
+                                            allProducts.where((p) {
+                                          final nama = (p['name'] ?? '')
+                                              .toString()
+                                              .toLowerCase();
+                                          return nama.contains(
+                                              searchQuery.toLowerCase());
+                                        }).toList();
+
+                                        // 3) Hitung total halaman
+                                        final totalPages =
+                                            (filteredProducts.length /
+                                                    productPerPage)
+                                                .ceil();
+
+                                        // Pastikan halaman tidak melebihi batas
+                                        final safePage = currentPageProduct >
+                                                totalPages
+                                            ? (totalPages == 0 ? 1 : totalPages)
+                                            : currentPageProduct;
+
+                                        // 4) Hitung start–end index
+                                        final start =
+                                            (safePage - 1) * productPerPage;
+                                        final end = (start + productPerPage >
+                                                filteredProducts.length)
+                                            ? filteredProducts.length
+                                            : start + productPerPage;
+
+                                        // 5) Produk yang ditampilkan
+                                        final paginatedProducts =
+                                            filteredProducts.isEmpty
+                                                ? []
+                                                : filteredProducts.sublist(
+                                                    start, end);
+
+                                        return GridView.builder(
+                                          gridDelegate:
+                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 4,
+                                            childAspectRatio: 3 / 4,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 12,
                                           ),
+                                          itemCount: paginatedProducts.length,
+                                          itemBuilder: (context, index) {
+                                            final product =
+                                                paginatedProducts[index];
+
+                                            return Card(
+                                              child: InkWell(
+                                                onTap: () {
+                                                  context
+                                                      .read<TransJualBloc>()
+                                                      .add(AddProduct(
+                                                        id: product['id'],
+                                                        name: product['name'],
+                                                        image: product['image'],
+                                                        quantity: 1,
+                                                        unit: 'pcs',
+                                                        price: 0.0,
+                                                        stok: product['stok'] ??
+                                                            0,
+                                                        rowId: '',
+                                                      ));
+                                                },
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceEvenly,
+                                                  children: [
+                                                    Expanded(
+                                                      child: SizedBox(
+                                                        width: 120,
+                                                        height: 120,
+                                                        child:
+                                                            buildProductImage(
+                                                                product[
+                                                                    'image']),
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              8.0),
+                                                      child: Column(
+                                                        children: [
+                                                          Text(
+                                                            product['name'],
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
                                         );
                                       },
                                     ),
                                   ),
+
+                                  // ======================
+                                  // 🔥 PAGINATION BUTTONS
+                                  // ======================
+                                  Builder(
+                                    builder: (context) {
+                                      // hitung ulang total halaman setelah search
+                                      final totalPages = ((state.products
+                                                  .where((p) {
+                                                final nama = (p['name'] ?? '')
+                                                    .toString()
+                                                    .toLowerCase();
+                                                return nama.contains(
+                                                    searchQuery.toLowerCase());
+                                              }).length) /
+                                              productPerPage)
+                                          .ceil();
+
+                                      return Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          IconButton(
+                                            icon:
+                                                const Icon(Icons.chevron_left),
+                                            onPressed: currentPageProduct > 1
+                                                ? () {
+                                                    setState(() {
+                                                      currentPageProduct--;
+                                                    });
+                                                  }
+                                                : null,
+                                          ),
+                                          Text(
+                                            "$currentPageProduct / ${totalPages == 0 ? 1 : totalPages}",
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          IconButton(
+                                            icon:
+                                                const Icon(Icons.chevron_right),
+                                            onPressed: currentPageProduct <
+                                                    (totalPages == 0
+                                                        ? 1
+                                                        : totalPages)
+                                                ? () {
+                                                    setState(() {
+                                                      currentPageProduct++;
+                                                    });
+                                                  }
+                                                : null,
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+
                                   const SizedBox(height: 8),
                                 ],
                               ),
@@ -162,739 +285,677 @@ class _TransJualScreenState extends State<TransJualScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               color: Colors.grey[100],
-                              child: state.isPrintPreview
-                                  ? PrintPreview(
-                                      transaksi: state,
-                                      onConfirm: () => context
-                                          .read<TransJualBloc>()
-                                          .add(CetakNota()),
-                                      onCancel: () => context
-                                          .read<TransJualBloc>()
-                                          .add(TogglePrintPreview()),
-                                    )
-                                  : Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const SizedBox(height: 8),
-                                        const SizedBox(height: 8),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                // Dropdown User (Pembeli)
-                                                Expanded(
-                                                  child:
-                                                      DropdownButtonFormField<
-                                                          String>(
-                                                    value: state.selectedUserId,
-                                                    decoration: InputDecoration(
-                                                      labelText:
-                                                          'Pilih Pegawai',
-                                                      border:
-                                                          OutlineInputBorder(),
-                                                      errorText: state
-                                                          .formErrors?['user'],
-                                                    ),
-                                                    isExpanded: true,
-                                                    items: state.penjualList
-                                                        .map((user) {
-                                                      return DropdownMenuItem<
-                                                          String>(
-                                                        value: user['id'],
-                                                        child:
-                                                            Text(user['name']),
-                                                      );
-                                                    }).toList(),
-                                                    onChanged: (selectedId) {
-                                                      if (selectedId != null) {
-                                                        context
-                                                            .read<
-                                                                TransJualBloc>()
-                                                            .add(SelectUser(
-                                                                selectedId));
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
-
-                                                SizedBox(width: 16),
-
-                                                // Dropdown Penjual
-                                                Expanded(
-                                                  child:
-                                                      DropdownButtonFormField<
-                                                          String>(
-                                                    value: state
-                                                        .selectedUserPenjualId,
-                                                    decoration: InputDecoration(
-                                                      labelText:
-                                                          'Pilih Penjual',
-                                                      border:
-                                                          OutlineInputBorder(),
-                                                      errorText:
-                                                          state.formErrors?[
-                                                              'penjual'],
-                                                    ),
-                                                    isExpanded: true,
-                                                    items: state
-                                                        .pegawaiGudangList
-                                                        .map((user) {
-                                                      return DropdownMenuItem<
-                                                          String>(
-                                                        value: user['id'],
-                                                        child:
-                                                            Text(user['name']),
-                                                      );
-                                                    }).toList(),
-                                                    onChanged: (selectedId) {
-                                                      if (selectedId != null) {
-                                                        context
-                                                            .read<
-                                                                TransJualBloc>()
-                                                            .add(SelectUserPenjual(
-                                                                selectedId));
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
-
-                                                SizedBox(width: 16),
-
-                                                // Date Picker
-                                                Expanded(
-                                                  child: TextFormField(
-                                                    readOnly: true,
-                                                    decoration: InputDecoration(
-                                                      labelText: 'Tanggal',
-                                                      border:
-                                                          OutlineInputBorder(),
-                                                    ),
-                                                    controller:
-                                                        TextEditingController(
-                                                      text: selectedDate != null
-                                                          ? "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}"
-                                                          : "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}",
-                                                    ),
-                                                    onTap: () async {
-                                                      final picked =
-                                                          await showDatePicker(
-                                                        context: context,
-                                                        initialDate:
-                                                            DateTime.now(),
-                                                        firstDate:
-                                                            DateTime(2020),
-                                                        lastDate:
-                                                            DateTime(2100),
-                                                      );
-                                                      if (picked != null) {
-                                                        setState(() {
-                                                          selectedDate = picked;
-                                                        });
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 8),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          // Dropdown User (Pembeli)
+                                          Expanded(
+                                            child:
+                                                DropdownButtonFormField<String>(
+                                              value: state.selectedUserId,
+                                              decoration: InputDecoration(
+                                                labelText: 'Pilih Pegawai',
+                                                border: OutlineInputBorder(),
+                                                errorText:
+                                                    state.formErrors?['user'],
+                                              ),
+                                              isExpanded: true,
+                                              items:
+                                                  state.penjualList.map((user) {
+                                                return DropdownMenuItem<String>(
+                                                  value: user['id'],
+                                                  child: Text(user['name']),
+                                                );
+                                              }).toList(),
+                                              onChanged: (selectedId) {
+                                                if (selectedId != null) {
+                                                  context
+                                                      .read<TransJualBloc>()
+                                                      .add(SelectUser(
+                                                          selectedId));
+                                                }
+                                              },
                                             ),
-                                            SizedBox(height: 12),
-                                            Row(
-                                              children: [
-                                                // Nama Pembeli
-                                                Expanded(
-                                                  flex: 2,
-                                                  child: TextFormField(
-                                                    decoration: InputDecoration(
-                                                      labelText: 'Nama Pembeli',
-                                                      border:
-                                                          OutlineInputBorder(),
-                                                      errorText:
-                                                          state.formErrors?[
-                                                              'namaPembeli'],
-                                                    ),
-                                                    onChanged: (value) {
-                                                      context
-                                                          .read<TransJualBloc>()
-                                                          .add(
-                                                              UpdateNamaPembeli(
-                                                                  value));
-                                                    },
-                                                  ),
-                                                ),
+                                          ),
 
-                                                SizedBox(width: 16),
+                                          SizedBox(width: 16),
 
-                                                // Nomor Invoice
-                                                Expanded(
-                                                  flex: 2,
-                                                  child: TextFormField(
-                                                    readOnly: true,
-                                                    controller:
-                                                        TextEditingController(
-                                                            text: state
-                                                                    .invoiceNumber ??
-                                                                ''),
-                                                    decoration: InputDecoration(
-                                                      labelText:
-                                                          'Nomor Invoice',
-                                                      border:
-                                                          OutlineInputBorder(),
-                                                      errorText:
-                                                          state.formErrors?[
-                                                              'invoice'],
-                                                    ),
-                                                  ),
-                                                ),
-
-                                                SizedBox(width: 16),
-
-                                                // Metode Pembayaran (dibuat lebih kecil)
-                                                Expanded(
-                                                  flex: 1,
-                                                  child:
-                                                      DropdownButtonFormField<
-                                                          String>(
-                                                    value: state.paymentMethod,
-                                                    decoration: InputDecoration(
-                                                      labelText:
-                                                          'Metode Pembayaran',
-                                                      border:
-                                                          OutlineInputBorder(),
-                                                      errorText:
-                                                          state.formErrors?[
-                                                              'payment'],
-                                                    ),
-                                                    isExpanded: true,
-                                                    items: [
-                                                      "Cash",
-                                                      "Debit",
-                                                      "Credit"
-                                                    ]
-                                                        .map((method) =>
-                                                            DropdownMenuItem(
-                                                              value: method,
-                                                              child:
-                                                                  Text(method),
-                                                            ))
-                                                        .toList(),
-                                                    onChanged: (value) {
-                                                      if (value != null) {
-                                                        context
-                                                            .read<
-                                                                TransJualBloc>()
-                                                            .add(
-                                                                SelectPaymentMethod(
-                                                                    value));
-                                                      }
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
+                                          // Dropdown Penjual
+                                          Expanded(
+                                            child:
+                                                DropdownButtonFormField<String>(
+                                              value:
+                                                  state.selectedUserPenjualId,
+                                              decoration: InputDecoration(
+                                                labelText: 'Pilih Penjual',
+                                                border: OutlineInputBorder(),
+                                                errorText: state
+                                                    .formErrors?['penjual'],
+                                              ),
+                                              isExpanded: true,
+                                              items: state.pegawaiGudangList
+                                                  .map((user) {
+                                                return DropdownMenuItem<String>(
+                                                  value: user['id'],
+                                                  child: Text(user['name']),
+                                                );
+                                              }).toList(),
+                                              onChanged: (selectedId) {
+                                                if (selectedId != null) {
+                                                  context
+                                                      .read<TransJualBloc>()
+                                                      .add(SelectUserPenjual(
+                                                          selectedId));
+                                                }
+                                              },
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Expanded(
-                                          child: ListView.builder(
-                                            itemCount:
-                                                state.selectedProducts.length,
-                                            itemBuilder: (context, index) {
-                                              final item =
-                                                  state.selectedProducts[index];
-                                              return Card(
-                                                key: ValueKey(
-                                                    '${item['id']}_${item['unit']}'),
-                                                color: const Color(0xFFF9F8FF),
-                                                shape: RoundedRectangleBorder(
+                                          ),
+
+                                          SizedBox(width: 16),
+
+                                          // Date Picker
+                                          Expanded(
+                                            child: TextFormField(
+                                              readOnly: true,
+                                              decoration: InputDecoration(
+                                                labelText: 'Tanggal',
+                                                border: OutlineInputBorder(),
+                                              ),
+                                              controller: TextEditingController(
+                                                text: selectedDate != null
+                                                    ? "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}"
+                                                    : "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}",
+                                              ),
+                                              onTap: () async {
+                                                final picked =
+                                                    await showDatePicker(
+                                                  context: context,
+                                                  initialDate: DateTime.now(),
+                                                  firstDate: DateTime(2020),
+                                                  lastDate: DateTime(2100),
+                                                );
+                                                if (picked != null) {
+                                                  setState(() {
+                                                    selectedDate = picked;
+                                                  });
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          // Nama Pembeli
+                                          Expanded(
+                                            flex: 2,
+                                            child: TextFormField(
+                                              decoration: InputDecoration(
+                                                labelText: 'Nama Pembeli',
+                                                border: OutlineInputBorder(),
+                                                errorText: state
+                                                    .formErrors?['namaPembeli'],
+                                              ),
+                                              onChanged: (value) {
+                                                context
+                                                    .read<TransJualBloc>()
+                                                    .add(UpdateNamaPembeli(
+                                                        value));
+                                              },
+                                            ),
+                                          ),
+
+                                          SizedBox(width: 16),
+
+                                          // Nomor Invoice
+                                          Expanded(
+                                            flex: 2,
+                                            child: TextFormField(
+                                              readOnly: true,
+                                              controller: TextEditingController(
+                                                  text: state.invoiceNumber ??
+                                                      ''),
+                                              decoration: InputDecoration(
+                                                labelText: 'Nomor Invoice',
+                                                border: OutlineInputBorder(),
+                                                errorText: state
+                                                    .formErrors?['invoice'],
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(width: 16),
+
+                                          // Metode Pembayaran (dibuat lebih kecil)
+                                          Expanded(
+                                            flex: 1,
+                                            child:
+                                                DropdownButtonFormField<String>(
+                                              value: state.paymentMethod,
+                                              decoration: InputDecoration(
+                                                labelText: 'Metode Pembayaran',
+                                                border: OutlineInputBorder(),
+                                                errorText: state
+                                                    .formErrors?['payment'],
+                                              ),
+                                              isExpanded: true,
+                                              items: ["Cash", "Debit", "Credit"]
+                                                  .map((method) =>
+                                                      DropdownMenuItem(
+                                                        value: method,
+                                                        child: Text(method),
+                                                      ))
+                                                  .toList(),
+                                              onChanged: (value) {
+                                                if (value != null) {
+                                                  context
+                                                      .read<TransJualBloc>()
+                                                      .add(SelectPaymentMethod(
+                                                          value));
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: ListView.builder(
+                                      itemCount: state.selectedProducts.length,
+                                      itemBuilder: (context, index) {
+                                        final item =
+                                            state.selectedProducts[index];
+                                        return Card(
+                                          key: ValueKey(
+                                              '${item['id']}_${item['unit']}'),
+                                          color: const Color(0xFFF9F8FF),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 6, horizontal: 4),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(10),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                ClipRRect(
                                                   borderRadius:
-                                                      BorderRadius.circular(12),
+                                                      BorderRadius.circular(8),
+                                                  child: SizedBox(
+                                                    width: 60,
+                                                    height: 60,
+                                                    child: buildProductImage(
+                                                        item['image']),
+                                                  ),
                                                 ),
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 6,
-                                                        horizontal: 4),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(10),
-                                                  child: Row(
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
                                                     crossAxisAlignment:
                                                         CrossAxisAlignment
                                                             .start,
                                                     children: [
-                                                      ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        child: SizedBox(
-                                                          width: 60,
-                                                          height: 60,
-                                                          child:
-                                                              buildProductImage(
-                                                                  item[
-                                                                      'image']),
-                                                        ),
+                                                      Text(
+                                                        item['name'] ?? '',
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 14),
                                                       ),
-                                                      const SizedBox(width: 12),
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                              item['name'] ??
-                                                                  '',
+                                                      const SizedBox(height: 4),
+                                                      Row(
+                                                        children: [
+                                                          Text(
+                                                            currencyFormatter
+                                                                .format(item[
+                                                                    'price']),
+                                                            style: const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 13),
+                                                          ),
+                                                          const SizedBox(
+                                                              width: 8),
+                                                          Text(
+                                                            "Stok: ${item['stok'] ?? '-'}",
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .grey[600],
+                                                                fontSize: 12),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          Container(
+                                                            width: 90,
+                                                            height: 38,
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        8),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color:
+                                                                  Colors.white,
+                                                              border: Border.all(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade300),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                            ),
+                                                            child:
+                                                                DropdownButtonHideUnderline(
+                                                              child:
+                                                                  DropdownButton<
+                                                                      String>(
+                                                                value: (item['unit'] !=
+                                                                            null &&
+                                                                        (item['unitListDetail'] as List).any((s) =>
+                                                                            s['satuan'] ==
+                                                                            item[
+                                                                                'unit']))
+                                                                    ? item[
+                                                                        'unit'] // kalau unit ada dan valid
+                                                                    : null, // kalau tidak, biarkan null supaya pakai hint
+                                                                hint:
+                                                                    const Text(
+                                                                  "Satuan",
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          13),
+                                                                ),
+                                                                style: const TextStyle(
+                                                                    fontSize:
+                                                                        13,
+                                                                    color: Colors
+                                                                        .black),
+                                                                isExpanded:
+                                                                    true,
+                                                                dropdownColor:
+                                                                    Colors
+                                                                        .white,
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                                icon: const Icon(
+                                                                    Icons
+                                                                        .arrow_drop_down),
+                                                                items: (item['unitListDetail'] !=
+                                                                            null &&
+                                                                        item['unitListDetail']
+                                                                            is List)
+                                                                    ? List<Map<String, dynamic>>.from(item[
+                                                                            'unitListDetail'])
+                                                                        .map((satuanData) =>
+                                                                            satuanData[
+                                                                                'satuan'])
+                                                                        .toSet() // hapus duplikat satuan
+                                                                        .map(
+                                                                            (satuan) {
+                                                                        final stok = (item['unitListDetail'] as List).firstWhere(
+                                                                              (s) => s['satuan'] == satuan,
+                                                                              orElse: () => {
+                                                                                'stock': 0
+                                                                              },
+                                                                            )['stock'] ??
+                                                                            0;
+                                                                        final isHabis =
+                                                                            stok ==
+                                                                                0;
+
+                                                                        return DropdownMenuItem<
+                                                                            String>(
+                                                                          value:
+                                                                              satuan,
+                                                                          enabled:
+                                                                              !isHabis,
+                                                                          child:
+                                                                              Text(
+                                                                            isHabis
+                                                                                ? '$satuan (habis)'
+                                                                                : satuan.toString(),
+                                                                            style:
+                                                                                TextStyle(
+                                                                              fontSize: 13,
+                                                                              color: isHabis ? Colors.grey : Colors.black,
+                                                                            ),
+                                                                          ),
+                                                                        );
+                                                                      }).toList()
+                                                                    : [],
+                                                                onChanged:
+                                                                    (selectedUnit) {
+                                                                  if (selectedUnit !=
+                                                                      null) {
+                                                                    final selectedDetail =
+                                                                        (item['unitListDetail']
+                                                                                as List)
+                                                                            .firstWhere(
+                                                                      (s) =>
+                                                                          s['satuan'] ==
+                                                                          selectedUnit,
+                                                                      orElse:
+                                                                          () =>
+                                                                              {
+                                                                        'stock':
+                                                                            0
+                                                                      },
+                                                                    );
+
+                                                                    final stok =
+                                                                        selectedDetail['stock'] ??
+                                                                            0;
+
+                                                                    if (stok >
+                                                                        0) {
+                                                                      context
+                                                                          .read<
+                                                                              TransJualBloc>()
+                                                                          .add(
+                                                                              UpdateProductUnit(
+                                                                            item['rowId'],
+                                                                            selectedUnit,
+                                                                          ));
+                                                                    }
+                                                                  }
+                                                                },
+                                                              ),
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                              width: 8),
+
+                                                          // ➖ Tombol kurang
+                                                          // ➖ Tombol kurang
+                                                          InkWell(
+                                                            onTap: () {
+                                                              double
+                                                                  currentQty =
+                                                                  (item['quantity']
+                                                                          as num)
+                                                                      .toDouble();
+                                                              if (currentQty >
+                                                                  1) {
+                                                                // minimal 1
+                                                                context
+                                                                    .read<
+                                                                        TransJualBloc>()
+                                                                    .add(
+                                                                      UpdateProductQuantity(
+                                                                          item[
+                                                                              'rowId'],
+                                                                          currentQty -
+                                                                              1),
+                                                                    );
+                                                              } else {
+                                                                context
+                                                                    .read<
+                                                                        TransJualBloc>()
+                                                                    .add(RemoveProduct(
+                                                                        item[
+                                                                            'rowId']));
+                                                              }
+                                                            },
+                                                            child: Container(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .all(6),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color: const Color(
+                                                                    0xFFD7C2F5),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            6),
+                                                              ),
+                                                              child: const Icon(
+                                                                  Icons.remove,
+                                                                  size: 16,
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                              width: 6),
+
+// 🔢 Jumlah Editable
+                                                          Container(
+                                                            width: 60,
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical:
+                                                                        4),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color:
+                                                                  Colors.white,
+                                                              border: Border.all(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade300),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          6),
+                                                            ),
+                                                            child: TextField(
+                                                              controller:
+                                                                  TextEditingController(
+                                                                text: item[
+                                                                        'quantity']
+                                                                    .toString(),
+                                                              ),
+                                                              keyboardType:
+                                                                  const TextInputType
+                                                                      .numberWithOptions(
+                                                                      decimal:
+                                                                          true),
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          14),
+                                                              decoration:
+                                                                  const InputDecoration(
+                                                                border:
+                                                                    InputBorder
+                                                                        .none,
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets
+                                                                        .zero,
+                                                              ),
+                                                              onSubmitted:
+                                                                  (value) {
+                                                                // ubah koma menjadi titik
+                                                                String
+                                                                    normalized =
+                                                                    value.replaceAll(
+                                                                        ',',
+                                                                        '.');
+                                                                double? qty =
+                                                                    double.tryParse(
+                                                                        normalized);
+                                                                if (qty !=
+                                                                        null &&
+                                                                    qty > 0) {
+                                                                  context
+                                                                      .read<
+                                                                          TransJualBloc>()
+                                                                      .add(
+                                                                        UpdateProductQuantity(
+                                                                            item['rowId'],
+                                                                            qty),
+                                                                      );
+                                                                }
+                                                              },
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                              width: 6),
+
+                                                          InkWell(
+                                                            onTap:
+                                                                item['quantity'] <
+                                                                        item[
+                                                                            'stok']
+                                                                    ? () {
+                                                                        double
+                                                                            currentQty =
+                                                                            (item['quantity'] as num).toDouble();
+                                                                        context
+                                                                            .read<TransJualBloc>()
+                                                                            .add(
+                                                                              UpdateProductQuantity(item['rowId'], currentQty + 1),
+                                                                            );
+                                                                      }
+                                                                    : null,
+                                                            child: Container(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .all(6),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color: item['quantity'] <
+                                                                        item[
+                                                                            'stok']
+                                                                    ? const Color(
+                                                                        0xFFD7C2F5)
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            6),
+                                                              ),
+                                                              child: const Icon(
+                                                                  Icons.add,
+                                                                  size: 16,
+                                                                  color: Colors
+                                                                      .white),
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                              width: 12),
+
+                                                          // 💰 Harga Total
+                                                          Expanded(
+                                                            child: Text(
+                                                              currencyFormatter
+                                                                  .format(item[
+                                                                          'price'] *
+                                                                      item[
+                                                                          'quantity']),
+                                                              textAlign:
+                                                                  TextAlign.end,
                                                               style: const TextStyle(
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .bold,
                                                                   fontSize: 14),
                                                             ),
-                                                            const SizedBox(
-                                                                height: 4),
-                                                            Row(
-                                                              children: [
-                                                                Text(
-                                                                  currencyFormatter
-                                                                      .format(item[
-                                                                          'price']),
-                                                                  style: const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold,
-                                                                      fontSize:
-                                                                          13),
-                                                                ),
-                                                                const SizedBox(
-                                                                    width: 8),
-                                                                Text(
-                                                                  "Stok: ${item['stok'] ?? '-'}",
-                                                                  style: TextStyle(
-                                                                      color: Colors
-                                                                              .grey[
-                                                                          600],
-                                                                      fontSize:
-                                                                          12),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                            const SizedBox(
-                                                                height: 8),
-                                                            Row(
-                                                              children: [
-                                                                Container(
-                                                                  width: 90,
-                                                                  height: 38,
-                                                                  padding: const EdgeInsets
-                                                                      .symmetric(
-                                                                      horizontal:
-                                                                          8),
-                                                                  decoration:
-                                                                      BoxDecoration(
-                                                                    color: Colors
-                                                                        .white,
-                                                                    border: Border.all(
-                                                                        color: Colors
-                                                                            .grey
-                                                                            .shade300),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(8),
-                                                                  ),
-                                                                  child:
-                                                                      DropdownButtonHideUnderline(
-                                                                    child: DropdownButton<
-                                                                        String>(
-                                                                      value: (item['unit'] != null &&
-                                                                              (item['unitListDetail'] as List).any((s) => s['satuan'] == item['unit']))
-                                                                          ? item['unit'] // kalau unit ada dan valid
-                                                                          : null, // kalau tidak, biarkan null supaya pakai hint
-                                                                      hint:
-                                                                          const Text(
-                                                                        "Satuan",
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                13),
-                                                                      ),
-                                                                      style: const TextStyle(
-                                                                          fontSize:
-                                                                              13,
-                                                                          color:
-                                                                              Colors.black),
-                                                                      isExpanded:
-                                                                          true,
-                                                                      dropdownColor:
-                                                                          Colors
-                                                                              .white,
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              8),
-                                                                      icon: const Icon(
-                                                                          Icons
-                                                                              .arrow_drop_down),
-                                                                      items: (item['unitListDetail'] != null &&
-                                                                              item['unitListDetail'] is List)
-                                                                          ? List<Map<String, dynamic>>.from(item['unitListDetail'])
-                                                                              .map((satuanData) => satuanData['satuan'])
-                                                                              .toSet() // hapus duplikat satuan
-                                                                              .map((satuan) {
-                                                                              final stok = (item['unitListDetail'] as List).firstWhere(
-                                                                                    (s) => s['satuan'] == satuan,
-                                                                                    orElse: () => {
-                                                                                      'stock': 0
-                                                                                    },
-                                                                                  )['stock'] ??
-                                                                                  0;
-                                                                              final isHabis = stok == 0;
-
-                                                                              return DropdownMenuItem<String>(
-                                                                                value: satuan,
-                                                                                enabled: !isHabis,
-                                                                                child: Text(
-                                                                                  isHabis ? '$satuan (habis)' : satuan.toString(),
-                                                                                  style: TextStyle(
-                                                                                    fontSize: 13,
-                                                                                    color: isHabis ? Colors.grey : Colors.black,
-                                                                                  ),
-                                                                                ),
-                                                                              );
-                                                                            }).toList()
-                                                                          : [],
-                                                                      onChanged:
-                                                                          (selectedUnit) {
-                                                                        if (selectedUnit !=
-                                                                            null) {
-                                                                          final selectedDetail =
-                                                                              (item['unitListDetail'] as List).firstWhere(
-                                                                            (s) =>
-                                                                                s['satuan'] ==
-                                                                                selectedUnit,
-                                                                            orElse: () =>
-                                                                                {
-                                                                              'stock': 0
-                                                                            },
-                                                                          );
-
-                                                                          final stok =
-                                                                              selectedDetail['stock'] ?? 0;
-
-                                                                          if (stok >
-                                                                              0) {
-                                                                            context.read<TransJualBloc>().add(UpdateProductUnit(
-                                                                                  item['rowId'],
-                                                                                  selectedUnit,
-                                                                                ));
-                                                                          }
-                                                                        }
-                                                                      },
-                                                                    ),
-                                                                  ),
-                                                                ),
-
-                                                                const SizedBox(
-                                                                    width: 8),
-
-                                                                // ➖ Tombol kurang
-                                                                // ➖ Tombol kurang
-                                                                InkWell(
-                                                                  onTap: () {
-                                                                    double
-                                                                        currentQty =
-                                                                        (item['quantity']
-                                                                                as num)
-                                                                            .toDouble();
-                                                                    if (currentQty >
-                                                                        1) {
-                                                                      // minimal 1
-                                                                      context
-                                                                          .read<
-                                                                              TransJualBloc>()
-                                                                          .add(
-                                                                            UpdateProductQuantity(item['rowId'],
-                                                                                currentQty - 1),
-                                                                          );
-                                                                    } else {
-                                                                      context
-                                                                          .read<
-                                                                              TransJualBloc>()
-                                                                          .add(RemoveProduct(
-                                                                              item['rowId']));
-                                                                    }
-                                                                  },
-                                                                  child:
-                                                                      Container(
-                                                                    padding:
-                                                                        const EdgeInsets
-                                                                            .all(
-                                                                            6),
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: const Color(
-                                                                          0xFFD7C2F5),
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              6),
-                                                                    ),
-                                                                    child: const Icon(
-                                                                        Icons
-                                                                            .remove,
-                                                                        size:
-                                                                            16,
-                                                                        color: Colors
-                                                                            .white),
-                                                                  ),
-                                                                ),
-
-                                                                const SizedBox(
-                                                                    width: 6),
-
-// 🔢 Jumlah Editable
-                                                                Container(
-                                                                  width: 60,
-                                                                  padding: const EdgeInsets
-                                                                      .symmetric(
-                                                                      horizontal:
-                                                                          8,
-                                                                      vertical:
-                                                                          4),
-                                                                  decoration:
-                                                                      BoxDecoration(
-                                                                    color: Colors
-                                                                        .white,
-                                                                    border: Border.all(
-                                                                        color: Colors
-                                                                            .grey
-                                                                            .shade300),
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(6),
-                                                                  ),
-                                                                  child:
-                                                                      TextField(
-                                                                    controller:
-                                                                        TextEditingController(
-                                                                      text: item[
-                                                                              'quantity']
-                                                                          .toString(),
-                                                                    ),
-                                                                    keyboardType: const TextInputType
-                                                                        .numberWithOptions(
-                                                                        decimal:
-                                                                            true),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                    style: const TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    decoration:
-                                                                        const InputDecoration(
-                                                                      border: InputBorder
-                                                                          .none,
-                                                                      isDense:
-                                                                          true,
-                                                                      contentPadding:
-                                                                          EdgeInsets
-                                                                              .zero,
-                                                                    ),
-                                                                    onSubmitted:
-                                                                        (value) {
-                                                                      // ubah koma menjadi titik
-                                                                      String
-                                                                          normalized =
-                                                                          value.replaceAll(
-                                                                              ',',
-                                                                              '.');
-                                                                      double?
-                                                                          qty =
-                                                                          double.tryParse(
-                                                                              normalized);
-                                                                      if (qty !=
-                                                                              null &&
-                                                                          qty >
-                                                                              0) {
-                                                                        context
-                                                                            .read<TransJualBloc>()
-                                                                            .add(
-                                                                              UpdateProductQuantity(item['rowId'], qty),
-                                                                            );
-                                                                      }
-                                                                    },
-                                                                  ),
-                                                                ),
-
-                                                                const SizedBox(
-                                                                    width: 6),
-
-                                                                InkWell(
-                                                                  onTap: item['quantity'] <
-                                                                          item[
-                                                                              'stok']
-                                                                      ? () {
-                                                                          double
-                                                                              currentQty =
-                                                                              (item['quantity'] as num).toDouble();
-                                                                          context
-                                                                              .read<TransJualBloc>()
-                                                                              .add(
-                                                                                UpdateProductQuantity(item['rowId'], currentQty + 1),
-                                                                              );
-                                                                        }
-                                                                      : null,
-                                                                  child:
-                                                                      Container(
-                                                                    padding:
-                                                                        const EdgeInsets
-                                                                            .all(
-                                                                            6),
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: item['quantity'] <
-                                                                              item[
-                                                                                  'stok']
-                                                                          ? const Color(
-                                                                              0xFFD7C2F5)
-                                                                          : Colors
-                                                                              .grey
-                                                                              .shade300,
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              6),
-                                                                    ),
-                                                                    child: const Icon(
-                                                                        Icons
-                                                                            .add,
-                                                                        size:
-                                                                            16,
-                                                                        color: Colors
-                                                                            .white),
-                                                                  ),
-                                                                ),
-
-                                                                const SizedBox(
-                                                                    width: 12),
-
-                                                                // 💰 Harga Total
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    currencyFormatter.format(item[
-                                                                            'price'] *
-                                                                        item[
-                                                                            'quantity']),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .end,
-                                                                    style: const TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .bold,
-                                                                        fontSize:
-                                                                            14),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      IconButton(
-                                                        icon: const Icon(
-                                                            Icons.delete,
-                                                            color: Colors.red),
-                                                        onPressed: () {
-                                                          context
-                                                              .read<
-                                                                  TransJualBloc>()
-                                                              .add(RemoveProduct(
-                                                                  item[
-                                                                      'rowId']));
-                                                        },
+                                                          ),
+                                                        ],
                                                       ),
                                                     ],
                                                   ),
                                                 ),
-                                              );
-                                            },
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete,
+                                                      color: Colors.red),
+                                                  onPressed: () {
+                                                    context
+                                                        .read<TransJualBloc>()
+                                                        .add(RemoveProduct(
+                                                            item['rowId']));
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Text(
+                                            "Total: ${currencyFormatter.format(totalHarga)}",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.purple,
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Align(
-                                                alignment:
-                                                    Alignment.centerRight,
-                                                child: Text(
-                                                  "Total: ${currencyFormatter.format(totalHarga)}",
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.purple,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      // Tombol Save (Hijau)
+                                      ElevatedButton.icon(
+                                        icon: const Icon(Icons.save, size: 20),
+                                        label: const Text("Save"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 64, vertical: 18),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
                                         ),
-                                        const SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            // Tombol Save (Hijau)
-                                            ElevatedButton.icon(
-                                              icon: const Icon(Icons.save,
-                                                  size: 20),
-                                              label: const Text("Save"),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.green,
-                                                foregroundColor: Colors.white,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 64,
-                                                        vertical: 18),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              onPressed: () {
-                                                context
-                                                    .read<TransJualBloc>()
-                                                    .add(SubmitTransaction());
-                                              },
-                                            ),
-                                            const SizedBox(width: 12),
-
-                                            // Tombol Print (Ungu muda)
-                                            ElevatedButton.icon(
-                                              icon: const Icon(Icons.print,
-                                                  size: 20),
-                                              label: const Text("Print"),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Color(
-                                                    0xFFE3D7FF), // Ungu muda
-                                                foregroundColor: Colors.black87,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 64,
-                                                        vertical: 18),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              onPressed: () {
-                                                context
-                                                    .read<TransJualBloc>()
-                                                    .add(TogglePrintPreview());
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                        onPressed: () {
+                                          context
+                                              .read<TransJualBloc>()
+                                              .add(SubmitTransaction());
+                                        },
+                                      ),
+                                      const SizedBox(width: 12),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           )
                         ],

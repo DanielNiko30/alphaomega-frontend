@@ -15,6 +15,8 @@ class EditUserBloc extends Bloc<EditUserEvent, EditUserState> {
         password: event.user.password ?? '', // jaga-jaga null
         role: event.user.role,
         noTelp: event.user.noTelp,
+        jenisKelamin: event.user.jenisKelamin!,
+        alamat: event.user.alamat!,
       ));
     });
 
@@ -29,6 +31,8 @@ class EditUserBloc extends Bloc<EditUserEvent, EditUserState> {
           password: event.password,
           role: event.role,
           noTelp: event.noTelp,
+          alamat: event.alamat,
+          jenisKelamin: event.jenisKelamin,
         );
 
         if (success) {

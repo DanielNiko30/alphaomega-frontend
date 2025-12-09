@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/widget/sidebar.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import '../../../../../widget/print_preview.dart';
 import '../bloc/edit_transaksi_jual_bloc.dart';
@@ -23,6 +24,8 @@ class TransJualEditScreen extends StatefulWidget {
 
 class _TransJualEditScreenState extends State<TransJualEditScreen> {
   DateTime? selectedDate;
+  int currentPageProduct = 1;
+  final int productPerPage = 20;
 
   @override
   void initState() {
@@ -37,6 +40,8 @@ class _TransJualEditScreenState extends State<TransJualEditScreen> {
 
   bool isPrintPreview = false;
   Uint8List? previewData;
+  final box = GetStorage();
+  late final role = box.read("role");
 
   @override
   Widget build(BuildContext context) {
@@ -74,73 +79,165 @@ class _TransJualEditScreenState extends State<TransJualEditScreen> {
                               child: Column(
                                 children: [
                                   TextField(
-                                    decoration: InputDecoration(
+                                    decoration: const InputDecoration(
                                       hintText: "Cari...",
-                                      prefixIcon: const Icon(Icons.search),
-                                      border: const OutlineInputBorder(),
+                                      prefixIcon: Icon(Icons.search),
+                                      border: OutlineInputBorder(),
                                     ),
                                     onChanged: (value) {
+                                      setState(() {
+                                        currentPageProduct =
+                                            1; // reset page ketika search
+                                      });
                                       context
                                           .read<TransJualEditBloc>()
                                           .add(SearchProductByNameEdit(value));
                                     },
                                   ),
                                   const SizedBox(height: 16),
+
+                                  // =========================================================
+                                  // 🔥 FILTER + PAGINATION
+                                  // =========================================================
                                   Expanded(
-                                    child: GridView.builder(
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 4,
-                                        childAspectRatio: 3 / 4,
-                                        crossAxisSpacing: 12,
-                                        mainAxisSpacing: 12,
-                                      ),
-                                      itemCount: state.products.length,
-                                      itemBuilder: (context, index) {
-                                        final product = state.products[index];
-                                        return Card(
-                                          child: InkWell(
-                                            onTap: () {
-                                              context
-                                                  .read<TransJualEditBloc>()
-                                                  .add(
-                                                    AddProductEdit(
-                                                      id: product['id'],
-                                                      name: product['name'],
-                                                      image: product['image'],
-                                                      quantity: 1,
-                                                      unit: 'pcs',
-                                                      price: 0.0,
-                                                      stok:
-                                                          product['stok'] ?? 0,
-                                                    ),
-                                                  );
-                                            },
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                Expanded(
-                                                    child: buildProductImage(
-                                                        product['image'])),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Text(
-                                                    product['name'],
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                    child: Builder(
+                                      builder: (context) {
+                                        // Produk hasil BLoC (sudah terfilter via SearchProductByNameEdit)
+                                        final filteredProducts = state.products;
+
+                                        // Hitung total halaman
+                                        final totalPages =
+                                            (filteredProducts.length /
+                                                    productPerPage)
+                                                .ceil();
+
+                                        final safePage = totalPages == 0
+                                            ? 1
+                                            : (currentPageProduct > totalPages
+                                                ? totalPages
+                                                : currentPageProduct);
+
+                                        // Hitung range item berdasarkan page
+                                        final start =
+                                            (safePage - 1) * productPerPage;
+                                        final end = (start + productPerPage >
+                                                filteredProducts.length)
+                                            ? filteredProducts.length
+                                            : start + productPerPage;
+
+                                        final paginatedProducts =
+                                            filteredProducts.sublist(
+                                                start, end);
+
+                                        return GridView.builder(
+                                          gridDelegate:
+                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 4,
+                                            childAspectRatio: 3 / 4,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 12,
                                           ),
+                                          itemCount: paginatedProducts.length,
+                                          itemBuilder: (context, index) {
+                                            final product =
+                                                paginatedProducts[index];
+
+                                            return Card(
+                                              child: InkWell(
+                                                onTap: () {
+                                                  context
+                                                      .read<TransJualEditBloc>()
+                                                      .add(
+                                                        AddProductEdit(
+                                                          id: product['id'],
+                                                          name: product['name'],
+                                                          image:
+                                                              product['image'],
+                                                          quantity: 1,
+                                                          unit: 'pcs',
+                                                          price: 0.0,
+                                                          stok:
+                                                              product['stok'] ??
+                                                                  0,
+                                                        ),
+                                                      );
+                                                },
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceEvenly,
+                                                  children: [
+                                                    Expanded(
+                                                      child: buildProductImage(
+                                                          product['image']),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              8.0),
+                                                      child: Text(
+                                                        product['name'],
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
                                         );
                                       },
                                     ),
                                   ),
+
+                                  // =========================================================
+                                  // 🔥 PAGINATION BUTTONS
+                                  // =========================================================
+                                  Builder(builder: (context) {
+                                    final totalPages =
+                                        (state.products.length / productPerPage)
+                                            .ceil();
+
+                                    return Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.chevron_left),
+                                          onPressed: currentPageProduct > 1
+                                              ? () {
+                                                  setState(() {
+                                                    currentPageProduct--;
+                                                  });
+                                                }
+                                              : null,
+                                        ),
+                                        Text(
+                                          "$currentPageProduct / ${totalPages == 0 ? 1 : totalPages}",
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.chevron_right),
+                                          onPressed:
+                                              currentPageProduct < totalPages
+                                                  ? () {
+                                                      setState(() {
+                                                        currentPageProduct++;
+                                                      });
+                                                    }
+                                                  : null,
+                                        ),
+                                      ],
+                                    );
+                                  }),
+
+                                  const SizedBox(height: 8),
                                 ],
                               ),
                             ),
@@ -209,10 +306,30 @@ class _TransJualEditScreenState extends State<TransJualEditScreen> {
                                           children: [
                                             ElevatedButton.icon(
                                               onPressed: () async {
+                                                // 1. Update status dulu
+                                                context
+                                                    .read<TransJualEditBloc>()
+                                                    .add(
+                                                      UpdateStatusTransaksiEdit(
+                                                          widget.transactionId),
+                                                    );
+
+                                                // 2. Print PDF
                                                 await Printing.layoutPdf(
                                                   onLayout: (format) async =>
                                                       previewData!,
                                                 );
+
+                                                // 3. Setelah selesai print, kembali ke halaman pending
+                                                if (context.mounted) {
+                                                  Navigator
+                                                      .pushNamedAndRemoveUntil(
+                                                    context,
+                                                    '/transaksiPenjualanPending',
+                                                    (route) =>
+                                                        false, // hapus semua halaman sebelumnya
+                                                  );
+                                                }
                                               },
                                               icon: const Icon(Icons.print,
                                                   size: 18),
@@ -906,115 +1023,119 @@ class _TransJualEditScreenState extends State<TransJualEditScreen> {
                                                   const SizedBox(width: 12),
 
                                                   // 🔹 Tombol Print
-                                                  ElevatedButton.icon(
-                                                    icon: const Icon(
-                                                        Icons.print,
-                                                        size: 20),
-                                                    label: const Text("Print"),
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          Color(0xFFE3D7FF),
-                                                      foregroundColor:
-                                                          Colors.black87,
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 64,
-                                                          vertical: 18),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
+                                                  if (role == "admin")
+                                                    ElevatedButton.icon(
+                                                      icon: const Icon(
+                                                          Icons.print,
+                                                          size: 20),
+                                                      label:
+                                                          const Text("Print"),
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Color(0xFFE3D7FF),
+                                                        foregroundColor:
+                                                            Colors.black87,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 64,
+                                                                vertical: 18),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
                                                       ),
-                                                    ),
-                                                    onPressed: () async {
-                                                      final stateBloc = context
-                                                          .read<
-                                                              TransJualEditBloc>()
-                                                          .state;
-                                                      if (stateBloc
-                                                          is! TransJualEditLoaded)
-                                                        return;
+                                                      onPressed: () async {
+                                                        final stateBloc = context
+                                                            .read<
+                                                                TransJualEditBloc>()
+                                                            .state;
+                                                        if (stateBloc
+                                                            is! TransJualEditLoaded)
+                                                          return;
 
-                                                      // Helper aman ambil nama user
-                                                      String getUserName(
-                                                          String? id) {
-                                                        try {
-                                                          final user = stateBloc
-                                                              .userList
-                                                              .firstWhere(
-                                                            (u) =>
-                                                                u['id'] == id,
-                                                            orElse: () =>
-                                                                <String,
-                                                                    dynamic>{
-                                                              'name': '-'
-                                                            },
-                                                          );
-                                                          return (user[
-                                                                  'name'] ??
-                                                              '-') as String;
-                                                        } catch (_) {
-                                                          return '-';
+                                                        String getUserName(
+                                                            String? id) {
+                                                          try {
+                                                            final user =
+                                                                stateBloc
+                                                                    .userList
+                                                                    .firstWhere(
+                                                              (u) =>
+                                                                  u['id'] == id,
+                                                              orElse: () =>
+                                                                  <String,
+                                                                      dynamic>{
+                                                                'name': '-'
+                                                              },
+                                                            );
+                                                            return (user[
+                                                                    'name'] ??
+                                                                '-') as String;
+                                                          } catch (_) {
+                                                            return '-';
+                                                          }
                                                         }
-                                                      }
 
-                                                      // 🔹 Generate PDF Preview
-                                                      final data =
-                                                          await buildInvoicePdf(
-                                                        invoiceNumber: stateBloc
-                                                                .invoiceNumber ??
-                                                            '-',
-                                                        tanggal: selectedDate !=
-                                                                null
-                                                            ? "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}"
-                                                            : DateTime.now()
-                                                                .toString(),
-                                                        namaPegawai: getUserName(
-                                                            stateBloc
-                                                                .selectedUserId),
-                                                        namaPenjual: getUserName(
-                                                            stateBloc
-                                                                .selectedUserPenjualId),
-                                                        namaPembeli: stateBloc
-                                                                .namaPembeli ??
-                                                            '-',
-                                                        metodePembayaran: stateBloc
-                                                                .paymentMethod ??
-                                                            '-',
-                                                        items: stateBloc
-                                                            .selectedProducts
-                                                            .map((p) => {
-                                                                  'name':
-                                                                      p['name'],
-                                                                  'qty': p[
-                                                                      'quantity'],
-                                                                  'price': p[
-                                                                      'price'],
-                                                                  'subtotal': (p[
-                                                                          'price'] *
-                                                                      p['quantity']),
-                                                                })
-                                                            .toList(),
-                                                        subtotal: stateBloc
-                                                            .selectedProducts
-                                                            .fold<num>(
+                                                        final data =
+                                                            await buildInvoicePdf(
+                                                          invoiceNumber: stateBloc
+                                                                  .invoiceNumber ??
+                                                              '-',
+                                                          tanggal: selectedDate !=
+                                                                  null
+                                                              ? "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}"
+                                                              : DateTime.now()
+                                                                  .toString(),
+                                                          namaPegawai: getUserName(
+                                                              stateBloc
+                                                                  .selectedUserId),
+                                                          namaPenjual: getUserName(
+                                                              stateBloc
+                                                                  .selectedUserPenjualId),
+                                                          namaPembeli: stateBloc
+                                                                  .namaPembeli ??
+                                                              '-',
+                                                          metodePembayaran:
+                                                              stateBloc
+                                                                      .paymentMethod ??
+                                                                  '-',
+                                                          items: stateBloc
+                                                              .selectedProducts
+                                                              .map((p) => {
+                                                                    'name': p[
+                                                                        'name'],
+                                                                    'qty': p[
+                                                                        'quantity'],
+                                                                    'price': p[
+                                                                        'price'],
+                                                                    'subtotal':
+                                                                        (p['price'] *
+                                                                            p['quantity']),
+                                                                  })
+                                                              .toList(),
+                                                          subtotal: stateBloc
+                                                              .selectedProducts
+                                                              .fold<num>(
                                                                 0,
                                                                 (sum, item) =>
                                                                     sum +
                                                                     (item['price'] *
                                                                         item[
-                                                                            'quantity']))
-                                                            .toString(),
-                                                      );
+                                                                            'quantity']),
+                                                              )
+                                                              .toString(),
+                                                        );
 
-                                                      setState(() {
-                                                        previewData = data;
-                                                        isPrintPreview = true;
-                                                      });
-                                                    },
-                                                  ),
+                                                        setState(() {
+                                                          previewData = data;
+                                                          isPrintPreview = true;
+                                                        });
+                                                      },
+                                                    ),
                                                 ],
                                               ),
                                             ],

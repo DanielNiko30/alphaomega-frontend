@@ -19,8 +19,13 @@ class _AddUserState extends State<AddUser> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController roleController = TextEditingController();
   final TextEditingController noTelpController = TextEditingController();
+  final TextEditingController alamatController = TextEditingController();
+  final TextEditingController jenisKelaminController = TextEditingController();
 
   bool _obscurePassword = true;
+
+  /// 🔥 variable untuk menyimpan error dari Bloc
+  Map<String, String> validationErrors = {};
 
   void clearFields() {
     usernameController.clear();
@@ -28,6 +33,8 @@ class _AddUserState extends State<AddUser> {
     passwordController.clear();
     roleController.clear();
     noTelpController.clear();
+    alamatController.clear();
+    jenisKelaminController.clear();
   }
 
   @override
@@ -59,7 +66,12 @@ class _AddUserState extends State<AddUser> {
         width: dialogWidth,
         child: BlocListener<AddUserBloc, AddUserState>(
           listener: (context, state) {
-            if (state is AddUserSuccess) {
+            if (state is AddUserValidationError) {
+              setState(() {
+                validationErrors = state.errors;
+              });
+            } else if (state is AddUserSuccess) {
+              validationErrors = {};
               BlocProvider.of<MasterUserBloc>(context).add(LoadMasterUsers());
               clearFields();
               Navigator.of(context).pop();
@@ -96,12 +108,14 @@ class _AddUserState extends State<AddUser> {
                       controller: usernameController,
                       label: "Username",
                       icon: Icons.person_outline,
+                      error: validationErrors["username"],
                     ),
                     const SizedBox(height: 14),
                     _buildTextField(
                       controller: nameController,
                       label: "Nama",
                       icon: Icons.badge_outlined,
+                      error: validationErrors["name"],
                     ),
                     const SizedBox(height: 14),
                     _buildTextField(
@@ -122,12 +136,14 @@ class _AddUserState extends State<AddUser> {
                           });
                         },
                       ),
+                      error: validationErrors["password"],
                     ),
                     const SizedBox(height: 14),
                     _buildTextField(
                       controller: roleController,
                       label: "Role",
                       icon: Icons.work_outline,
+                      error: validationErrors["role"],
                     ),
                     const SizedBox(height: 14),
                     _buildTextField(
@@ -135,6 +151,21 @@ class _AddUserState extends State<AddUser> {
                       label: "No Telepon",
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
+                      error: validationErrors["noTelp"],
+                    ),
+                    const SizedBox(height: 14),
+                    _buildTextField(
+                      controller: alamatController,
+                      label: "Alamat",
+                      icon: Icons.home_outlined,
+                      error: validationErrors["alamat"],
+                    ),
+                    const SizedBox(height: 14),
+                    _buildTextField(
+                      controller: jenisKelaminController,
+                      label: "Jenis Kelamin",
+                      icon: Icons.wc_outlined,
+                      error: validationErrors["jenisKelamin"],
                     ),
                   ],
                 ),
@@ -162,6 +193,8 @@ class _AddUserState extends State<AddUser> {
             ),
           ),
           onPressed: () {
+            setState(() => validationErrors = {}); // reset error dulu
+
             context.read<AddUserBloc>().add(
                   SubmitAddUser(
                     username: usernameController.text.trim(),
@@ -169,6 +202,8 @@ class _AddUserState extends State<AddUser> {
                     password: passwordController.text.trim(),
                     role: roleController.text.trim(),
                     noTelp: noTelpController.text.trim(),
+                    alamat: alamatController.text.trim(),
+                    jenisKelamin: jenisKelaminController.text.trim(),
                   ),
                 );
           },
@@ -184,30 +219,28 @@ class _AddUserState extends State<AddUser> {
     bool obscureText = false,
     Widget? suffixIcon,
     TextInputType? keyboardType,
+    String? error,
   }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: icon != null ? Icon(icon, color: Colors.teal) : null,
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.teal.shade200),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: icon != null ? Icon(icon, color: Colors.teal) : null,
+            suffixIcon: suffixIcon,
+            errorText: error, // 🔥 tampilkan error di bawah field
+            filled: true,
+            fillColor: Colors.grey[50],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.teal.shade100),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.teal.shade400, width: 1.5),
-        ),
-      ),
+      ],
     );
   }
 }

@@ -2,8 +2,8 @@ class StokShopee {
   final String satuan;
   final int harga;
   final int stokQty;
-  final String? idProductShopee; // ← tambahkan ini
-  final String? idProductLazada; // ← tambahkan ini
+  final String? idProductShopee;
+  final String? idProductLazada;
 
   StokShopee({
     required this.satuan,
@@ -30,4 +30,10 @@ class StokShopee {
         'idProductShopee': idProductShopee,
         'idProductLazada': idProductLazada,
       };
+
+  @override
+  String toString() {
+    return 'StokShopee(satuan: $satuan, harga: $harga, stokQty: $stokQty, '
+        'idProductShopee: $idProductShopee, idProductLazada: $idProductLazada)';
+  }
 }

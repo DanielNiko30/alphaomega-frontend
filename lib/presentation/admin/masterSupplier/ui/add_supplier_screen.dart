@@ -95,7 +95,7 @@ class AddSupplierScreen extends StatelessWidget {
   }
 }
 
-/// 🌿 Search Bar dengan tampilan mewah
+/// 🌿 Search Bar
 class SupplierSearchBar extends StatefulWidget {
   const SupplierSearchBar({super.key});
 
@@ -154,7 +154,7 @@ class _SupplierSearchBarState extends State<SupplierSearchBar> {
   }
 }
 
-/// 🌿 Supplier Table - gaya seperti daftar kategori
+/// 🌿 Supplier Table
 class SupplierTable extends StatelessWidget {
   const SupplierTable({super.key});
 
@@ -196,29 +196,43 @@ class SupplierTable extends StatelessWidget {
                   child: const Row(
                     children: [
                       Expanded(
-                          flex: 1,
-                          child: Text("No",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white))),
+                        flex: 1,
+                        child: Text("No",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
                       Expanded(
-                          flex: 3,
-                          child: Text("Nama Supplier",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white))),
+                        flex: 3,
+                        child: Text("Nama Supplier",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
                       Expanded(
-                          flex: 3,
-                          child: Text("No. Telepon",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white))),
+                        flex: 3,
+                        child: Text("No. Telepon",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
+
+                      /// NEW — tampilkan keterangan
                       Expanded(
-                          flex: 2,
-                          child: Text("Aksi",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white))),
+                        flex: 4,
+                        child: Text("Keterangan",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
+
+                      Expanded(
+                        flex: 2,
+                        child: Text("Aksi",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
                     ],
                   ),
                 ),
@@ -246,6 +260,66 @@ class SupplierTable extends StatelessWidget {
                               Expanded(
                                   flex: 3, child: Text(supplier.namaSupplier)),
                               Expanded(flex: 3, child: Text(supplier.noTelp)),
+
+                              /// ✅ UPDATED — Keterangan rapi + wrap + tooltip
+                              /// ✅ Tooltip mewah + lebar dibatasi + teks tidak mepet aksi
+                              Expanded(
+                                flex: 4,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                      right:
+                                          20), // ➜ kasih jarak dari tombol aksi
+                                  child: Tooltip(
+                                    margin: const EdgeInsets.all(10),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                          color: Colors.grey.shade300),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                          offset: Offset(2, 2),
+                                        )
+                                      ],
+                                    ),
+
+                                    // ★ Lewat richMessage biar bisa wrap + maxWidth
+                                    richMessage: WidgetSpan(
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 300),
+                                        child: Text(
+                                          supplier.keterangan?.isNotEmpty ==
+                                                  true
+                                              ? supplier.keterangan!
+                                              : "-",
+                                          softWrap: true,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    child: Text(
+                                      supplier.keterangan ?? "-",
+                                      maxLines: 3,
+                                      softWrap: true,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
                               Expanded(
                                 flex: 2,
                                 child: Row(
@@ -270,7 +344,14 @@ class SupplierTable extends StatelessWidget {
                                       icon: const Icon(Icons.delete,
                                           color: Colors.redAccent),
                                       onPressed: () {
-                                        // TODO: aksi hapus supplier
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => BlocProvider.value(
+                                            value: context.read<SupplierBloc>(),
+                                            child: DeleteSupplierDialog(
+                                                supplier: supplier),
+                                          ),
+                                        );
                                       },
                                     ),
                                   ],
@@ -282,7 +363,7 @@ class SupplierTable extends StatelessWidget {
                       },
                     ),
                   ),
-                ),
+                )
               ],
             ),
           );
@@ -307,6 +388,7 @@ class SupplierDialog extends StatefulWidget {
 class _SupplierDialogState extends State<SupplierDialog> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _telpController = TextEditingController();
+  final TextEditingController _ketController = TextEditingController();
 
   @override
   void initState() {
@@ -314,89 +396,224 @@ class _SupplierDialogState extends State<SupplierDialog> {
     if (widget.supplier != null) {
       _namaController.text = widget.supplier!.namaSupplier;
       _telpController.text = widget.supplier!.noTelp;
+      _ketController.text = widget.supplier!.keterangan ?? "";
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.supplier != null;
+    final supplierBloc = context.read<SupplierBloc>();
 
-    return AlertDialog(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 120,
+        vertical: isMobile ? 30 : 80,
+      ),
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      title: Row(
-        children: [
-          Icon(isEdit ? Icons.edit : Icons.add,
-              color: isEdit ? Colors.blueAccent : Colors.green),
-          const SizedBox(width: 8),
-          Text(
-            isEdit ? "Edit Supplier" : "Tambah Supplier",
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: 430,
+      child: Container(
+        padding: const EdgeInsets.all(25),
+        width: isMobile ? double.maxFinite : 540, // ⬅ popup lebih lebar
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            /// === TITLE BAR ===
+            Row(
+              children: [
+                Icon(
+                  isEdit ? Icons.edit : Icons.add,
+                  color: isEdit ? Colors.blueAccent : Colors.green,
+                  size: 26,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  isEdit ? "Edit Supplier" : "Tambah Supplier",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 22),
+
+            /// === INPUT FORM ===
             TextField(
               controller: _namaController,
-              decoration: InputDecoration(
-                labelText: "Nama Supplier",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+              decoration: _inputStyle("Nama Supplier"),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
+
             TextField(
               controller: _telpController,
-              decoration: InputDecoration(
-                labelText: "No. Telp",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+              decoration: _inputStyle("No. Telp"),
               keyboardType: TextInputType.phone,
             ),
+            const SizedBox(height: 16),
+
+            /// 🌿 KETERANGAN — Bigger TextArea
+            SizedBox(
+              height: 140, // ⬅ lebih tinggi biar enak lihat teks panjang
+              child: TextField(
+                controller: _ketController,
+                maxLines: null,
+                expands: true,
+                decoration: _inputStyle("Keterangan"),
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            /// === ACTIONS ===
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    "Batal",
+                    style: TextStyle(color: Colors.black87, fontSize: 15),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isEdit ? Colors.blueAccent : Colors.green,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 26, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    final nama = _namaController.text.trim();
+                    final telp = _telpController.text.trim();
+                    final ket = _ketController.text.trim();
+
+                    if (nama.isEmpty || telp.isEmpty) return;
+
+                    // cek duplikasi nama
+                    List<String> existingNames = [];
+                    final state = supplierBloc.state;
+                    if (state is SupplierLoaded) {
+                      existingNames = state.listSupplier
+                          .where((s) =>
+                              !isEdit ||
+                              s.idSupplier != widget.supplier!.idSupplier)
+                          .map((s) => s.namaSupplier.toLowerCase())
+                          .toList();
+                    }
+
+                    if (existingNames.contains(nama.toLowerCase())) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Perhatian"),
+                          content:
+                              Text("Nama supplier '$nama' sudah terdaftar."),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("OK"),
+                            )
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (isEdit) {
+                      supplierBloc.add(UpdateSupplier(
+                        widget.supplier!.idSupplier.toString(),
+                        nama,
+                        telp,
+                        ket,
+                      ));
+                    } else {
+                      supplierBloc.add(AddSupplier(
+                        nama,
+                        telp,
+                        ket,
+                      ));
+                    }
+
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    isEdit ? "Update" : "Simpan",
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ],
+            )
           ],
         ),
       ),
-      actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    );
+  }
+
+  /// Reusable modern input style
+  InputDecoration _inputStyle(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Colors.grey.shade100,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: Color(0xFF2563EB), width: 2),
+      ),
+    );
+  }
+}
+
+class DeleteSupplierDialog extends StatelessWidget {
+  final Supplier supplier;
+
+  const DeleteSupplierDialog({super.key, required this.supplier});
+
+  @override
+  Widget build(BuildContext context) {
+    final supplierBloc = context.read<SupplierBloc>();
+
+    return AlertDialog(
+      title: const Text("Hapus Supplier"),
+      content: Text(
+        "Apakah Anda yakin ingin menghapus supplier '${supplier.namaSupplier}'?",
+        style: const TextStyle(fontSize: 15),
+      ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text("Batal",
-              style: TextStyle(color: Colors.black87, fontSize: 15)),
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Batal"),
         ),
-        ElevatedButton(
+        ElevatedButton.icon(
+          icon: const Icon(Icons.delete_forever),
+          label: const Text("Hapus"),
           style: ElevatedButton.styleFrom(
-            backgroundColor: isEdit ? Colors.blueAccent : Colors.green,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            backgroundColor: Colors.redAccent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: () {
-            final nama = _namaController.text.trim();
-            final telp = _telpController.text.trim();
-
-            if (nama.isNotEmpty && telp.isNotEmpty) {
-              if (isEdit) {
-                context.read<SupplierBloc>().add(UpdateSupplier(
-                    widget.supplier!.idSupplier.toString(), nama, telp));
-              } else {
-                context.read<SupplierBloc>().add(AddSupplier(nama, telp));
-              }
-              Navigator.of(context).pop();
-            }
+            supplierBloc.add(DeleteSupplier(supplier.idSupplier.toString()));
+            Navigator.pop(context);
           },
-          child: Text(isEdit ? "Update" : "Simpan",
-              style: const TextStyle(color: Colors.white, fontSize: 15)),
         ),
       ],
     );

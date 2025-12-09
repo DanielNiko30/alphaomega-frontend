@@ -26,7 +26,8 @@ class SupplierController {
     }
   }
 
-  static Future<bool> addSupplier(String namaSupplier, String noTelp) async {
+  static Future<bool> addSupplier(
+      String namaSupplier, String noTelp, String? keterangan) async {
     try {
       final response = await http.post(
         Uri.parse(baseUrl),
@@ -36,6 +37,7 @@ class SupplierController {
         body: {
           "nama_supplier": namaSupplier,
           "no_telp": noTelp,
+          "keterangan": keterangan,
         },
       );
 
@@ -61,8 +63,22 @@ class SupplierController {
   }
 
   static Future<bool> deleteSupplier(String id) async {
-    final response = await http.delete(Uri.parse("$baseUrl/$id"));
+    try {
+      final response = await http.delete(
+        Uri.parse("$baseUrl/$id"),
+        headers: {"Content-Type": "application/json"},
+      );
 
-    return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return true; // berhasil soft delete
+      } else if (response.statusCode == 404) {
+        throw Exception("Supplier tidak ditemukan");
+      } else {
+        final body = jsonDecode(response.body);
+        throw Exception(body["message"] ?? "Gagal menghapus supplier");
+      }
+    } catch (e) {
+      throw Exception("Terjadi kesalahan saat menghapus supplier: $e");
+    }
   }
 }

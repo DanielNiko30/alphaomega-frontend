@@ -7,7 +7,9 @@ class KategoriBloc extends Bloc<KategoriEvent, KategoriState> {
   KategoriBloc(ProductController productController) : super(KategoriInitial()) {
     on<FetchKategori>(_onFetchKategori);
     on<AddKategori>(_onAddKategori);
-    on<EditKategori>(_onEditKategori); // 🔹 Tambahan untuk update kategori
+    on<EditKategori>(_onEditKategori);
+    on<SearchKategoriByName>(_onSearchKategoriByName);
+    on<DeleteKategori>(_onDeleteKategori);
   }
 
   Future<void> _onFetchKategori(
@@ -37,7 +39,6 @@ class KategoriBloc extends Bloc<KategoriEvent, KategoriState> {
     }
   }
 
-  /// 🔹 Fungsi baru untuk Edit Kategori
   Future<void> _onEditKategori(
       EditKategori event, Emitter<KategoriState> emit) async {
     emit(KategoriLoading());
@@ -46,7 +47,6 @@ class KategoriBloc extends Bloc<KategoriEvent, KategoriState> {
         event.idKategori,
         event.namaBaru,
       );
-
       if (success) {
         final kategoriList = await ProductController.fetchKategori();
         emit(KategoriLoaded(kategoriList));
@@ -55,6 +55,36 @@ class KategoriBloc extends Bloc<KategoriEvent, KategoriState> {
       }
     } catch (e) {
       emit(KategoriError("Gagal memperbarui kategori: ${e.toString()}"));
+    }
+  }
+
+  // 🔹 Handler search
+  void _onSearchKategoriByName(
+      SearchKategoriByName event, Emitter<KategoriState> emit) {
+    if (state is KategoriLoaded) {
+      final currentState = state as KategoriLoaded;
+      final filtered = currentState.listKategori
+          .where((k) =>
+              k.namaKategori.toLowerCase().contains(event.query.toLowerCase()))
+          .toList();
+      emit(KategoriLoaded(currentState.listKategori, filteredList: filtered));
+    }
+  }
+
+  Future<void> _onDeleteKategori(
+      DeleteKategori event, Emitter<KategoriState> emit) async {
+    emit(KategoriLoading());
+    try {
+      final success = await ProductController.deleteKategori(event.idKategori);
+
+      if (success) {
+        final kategoriList = await ProductController.fetchKategori();
+        emit(KategoriLoaded(kategoriList));
+      } else {
+        emit(KategoriError("Gagal menghapus kategori"));
+      }
+    } catch (e) {
+      emit(KategoriError("Gagal menghapus kategori: ${e.toString()}"));
     }
   }
 }

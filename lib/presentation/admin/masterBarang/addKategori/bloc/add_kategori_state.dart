@@ -8,12 +8,12 @@ class KategoriLoading extends KategoriState {}
 
 class KategoriLoaded extends KategoriState {
   final List<Kategori> listKategori;
+  final List<Kategori>? filteredList; // 🔹 bisa di-filter
 
-  KategoriLoaded(this.listKategori);
+  KategoriLoaded(this.listKategori, {this.filteredList});
 }
 
 class KategoriError extends KategoriState {
   final String message;
-
   KategoriError(this.message);
 }

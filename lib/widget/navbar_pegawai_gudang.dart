@@ -34,7 +34,7 @@ class CustomNavbar extends StatelessWidget {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.shopping_cart),
-          label: "Transaksi",
+          label: "Produk",
         ),
       ],
     );

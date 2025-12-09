@@ -1,16 +1,12 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 
 import '../../../../../model/product/stok_model.dart';
 import '../../../../../model/product/add_product_model.dart';
-import '../../../../../controller/admin/product_controller.dart';
 import '../../../../../widget/sidebar.dart';
-import '../../addProductShopee/bloc/add_product_shopee_bloc.dart';
-import '../../addProductShopee/bloc/add_product_shopee_event.dart';
 import '../bloc/add_product_bloc.dart';
 import '../bloc/add_product_event.dart';
 import '../bloc/add_product_state.dart';
@@ -71,7 +67,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
   }
 
-  Future<void> _submitProduct({bool goBack = false}) async {
+  Future<void> _submitProduct() async {
     if (_formKey.currentState!.validate() &&
         (_imageBytes != null || _image != null)) {
       final satuanList = satuanControllers.map((c) => c.text).toList();
@@ -84,10 +80,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               product: AddProduct(
                 idProduct: "",
                 productKategori: selectedKategori!,
-                namaProduct: namaController.text,
+                namaProduct: namaController.text.trim(),
                 gambarProduct: fileName,
                 harga: hargaList,
-                deskripsiProduct: deskripsiController.text,
+                deskripsiProduct: deskripsiController.text.trim(),
                 stokList: List.generate(satuanList.length, (index) {
                   return StokProduct(
                     idStok: "",
@@ -101,16 +97,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
               fileName: fileName,
             ),
           );
-
-      if (goBack) {
-        Future.delayed(const Duration(seconds: 2), () {
-          Navigator.of(context).pushReplacementNamed('/masterBarang');
-        });
-      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Harap lengkapi semua data dan pilih gambar")),
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Perhatian"),
+          content:
+              const Text("Harap lengkapi semua data dan pilih gambar produk."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
       );
     }
   }
@@ -122,13 +122,36 @@ class _AddProductScreenState extends State<AddProductScreen> {
       body: BlocListener<AddProductBloc, AddProductState>(
         listener: (context, state) {
           if (state is ProductSaved) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Produk berhasil disimpan!")),
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text("Sukses"),
+                content: const Text("Produk berhasil disimpan!"),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context)
+                          .pushReplacementNamed('/masterBarang');
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              ),
             );
-            Navigator.of(context).pushReplacementNamed('/masterBarang');
           } else if (state is AddProductFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text("Terjadi Kesalahan"),
+                content: Text(state.message),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("OK"),
+                  ),
+                ],
+              ),
             );
           }
         },
@@ -205,8 +228,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                           child: _imageBytes != null ||
                                                   _image != null
                                               ? AspectRatio(
-                                                  aspectRatio:
-                                                      1, // bikin tampilan 1:1 proporsional
+                                                  aspectRatio: 1,
                                                   child: ClipRRect(
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -214,8 +236,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                                     child: kIsWeb
                                                         ? Image.memory(
                                                             _imageBytes!,
-                                                            fit: BoxFit
-                                                                .contain, // biar tidak ke-zoom / cemét
+                                                            fit: BoxFit.contain,
                                                           )
                                                         : Image.file(
                                                             _image!,
@@ -420,7 +441,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () => _submitProduct(goBack: true),
+                                  onPressed: _submitProduct,
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 16),
@@ -448,6 +469,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ],
             ),
+
+            // === LOADING OVERLAY ===
             BlocBuilder<AddProductBloc, AddProductState>(
               builder: (context, state) {
                 if (state is AddProductLoading) {

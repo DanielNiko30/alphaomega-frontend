@@ -5,7 +5,7 @@ abstract class LaporanBeliState extends Equatable {
   const LaporanBeliState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class LaporanBeliInitial extends LaporanBeliState {}
@@ -18,7 +18,7 @@ class LaporanBeliLoaded extends LaporanBeliState {
   const LaporanBeliLoaded(this.listTransaksi);
 
   @override
-  List<Object> get props => [listTransaksi];
+  List<Object?> get props => [listTransaksi];
 }
 
 class LaporanBeliError extends LaporanBeliState {
@@ -27,5 +27,5 @@ class LaporanBeliError extends LaporanBeliState {
   const LaporanBeliError(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }

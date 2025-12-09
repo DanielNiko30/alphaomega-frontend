@@ -10,6 +10,8 @@ class EditUserLoaded extends EditUserState {
   final String password;
   final String role;
   final String noTelp;
+  final String jenisKelamin;
+  final String alamat;
 
   EditUserLoaded({
     required this.username,
@@ -17,6 +19,8 @@ class EditUserLoaded extends EditUserState {
     required this.password,
     required this.role,
     required this.noTelp,
+    required this.jenisKelamin,
+    required this.alamat,
   });
 }
 

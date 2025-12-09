@@ -4,6 +4,7 @@ import '../../../../../widget/navbar_pegawai_online.dart';
 import '../bloc/detail_order_lazada_bloc.dart';
 import '../bloc/detail_order_lazada_event.dart';
 import '../bloc/detail_order_lazada_state.dart';
+import 'package:intl/intl.dart';
 
 class LazadaOrderDetailPage extends StatelessWidget {
   final String orderId;
@@ -138,6 +139,13 @@ class LazadaOrderDetailPage extends StatelessWidget {
 
   // 🎨 UI Components tetap sama
   Widget _buildHeader(Map<String, dynamic> order) {
+    // 🔹 Format total price
+    final totalPrice = order['price'] != null
+        ? NumberFormat.currency(
+                locale: 'id_ID', symbol: 'Rp ', decimalDigits: 2)
+            .format(order['price'])
+        : 'Rp 0,00';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -171,7 +179,7 @@ class LazadaOrderDetailPage extends StatelessWidget {
           _infoRow("Status", (order['statuses'] as List?)?.join(', ') ?? '-'),
           const Divider(color: Colors.white54, height: 18),
           Text(
-            "Total: Rp ${order['price'] ?? '0'}",
+            "Total: $totalPrice", // 🔹 pakai format Rupiah
             style: const TextStyle(
                 color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
           ),
@@ -233,6 +241,13 @@ class LazadaOrderDetailPage extends StatelessWidget {
       );
 
   Widget _buildItemCard(Map<String, dynamic> item) {
+    // 🔹 Format harga per item
+    final itemPrice = item['paid_price'] != null
+        ? NumberFormat.currency(
+                locale: 'id_ID', symbol: 'Rp ', decimalDigits: 2)
+            .format(item['paid_price'])
+        : 'Rp 0,00';
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
@@ -276,7 +291,7 @@ class LazadaOrderDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Rp ${item['paid_price'] ?? '0'}",
+                  itemPrice, // 🔹 pakai format Rupiah
                   style: TextStyle(
                       color: Colors.green.shade700,
                       fontWeight: FontWeight.bold),

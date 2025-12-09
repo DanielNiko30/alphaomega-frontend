@@ -35,38 +35,72 @@ class DetailTransaksi {
 }
 
 class LaporanNota {
-  final String idTransaksi;
+  final String idHTransJual;
   final String tanggal;
   final String metodePembayaran;
-  final List<DetailTransaksi> detail;
+  final List<LaporanDetail> detail;
   final int totalPenjualan;
-  final int totalHpp;
-  final int totalUntung;
 
   LaporanNota({
-    required this.idTransaksi,
+    required this.idHTransJual,
     required this.tanggal,
     required this.metodePembayaran,
     required this.detail,
     required this.totalPenjualan,
-    required this.totalHpp,
-    required this.totalUntung,
   });
 
   factory LaporanNota.fromJson(Map<String, dynamic> json) {
-    var detailList = <DetailTransaksi>[];
-    if (json['detail'] != null) {
-      detailList = List<DetailTransaksi>.from(
-          json['detail'].map((x) => DetailTransaksi.fromJson(x)));
-    }
     return LaporanNota(
-      idTransaksi: json['id_htrans_jual'] ?? "-",
-      tanggal: json['tanggal'] ?? "-",
-      metodePembayaran: json['metode_pembayaran'] ?? "-",
-      detail: detailList,
-      totalPenjualan: json['total_nota']?['total_penjualan'] ?? 0,
-      totalHpp: json['total_nota']?['total_hpp'] ?? 0,
-      totalUntung: json['total_nota']?['total_untung'] ?? 0,
+      idHTransJual: json['id_htrans_jual'],
+      tanggal: json['tanggal'],
+      metodePembayaran: json['metode_pembayaran'],
+      detail: (json['detail'] as List<dynamic>?)
+              ?.map((e) => LaporanDetail.fromJson(e))
+              .toList() ??
+          [],
+      totalPenjualan: _toIntSafe(json['total_nota']?['total_penjualan']),
+    );
+  }
+
+  static int _toIntSafe(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
+  }
+}
+
+class LaporanDetail {
+  final String namaProduct;
+  final String satuan;
+  final int jumlah;
+  final int hargaJual;
+  final int hargaBeli;
+  final int subtotal;
+  final int hpp;
+  final int untung;
+
+  LaporanDetail({
+    required this.namaProduct,
+    required this.satuan,
+    required this.jumlah,
+    required this.hargaJual,
+    required this.hargaBeli,
+    required this.subtotal,
+    required this.hpp,
+    required this.untung,
+  });
+
+  factory LaporanDetail.fromJson(Map<String, dynamic> json) {
+    return LaporanDetail(
+      namaProduct: json['nama_product'],
+      satuan: json['satuan'],
+      jumlah: LaporanNota._toIntSafe(json['jumlah']),
+      hargaJual: LaporanNota._toIntSafe(json['harga_jual']),
+      hargaBeli: LaporanNota._toIntSafe(json['harga_beli']),
+      subtotal: LaporanNota._toIntSafe(json['subtotal']),
+      hpp: LaporanNota._toIntSafe(json['hpp']),
+      untung: LaporanNota._toIntSafe(json['untung']),
     );
   }
 }

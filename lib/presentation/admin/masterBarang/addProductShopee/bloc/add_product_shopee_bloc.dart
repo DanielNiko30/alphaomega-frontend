@@ -26,27 +26,30 @@ class AddProductShopeeBloc
     emit(AddProductShopeeLoading());
 
     try {
-      // === PERUBAHAN DISINI ===
-      // Sekarang ambil product berdasarkan ID jika diberikan,
-      // kalau tidak, ambil produk terbaru
       final LatestProduct latestProduct =
-          await ProductController.getLatestProduct(
-        productId: event.productId, // <-- param opsional
-      );
+          await ProductController.getLatestProduct(productId: event.productId);
 
       if (latestProduct.stok.isEmpty) {
         emit(AddProductShopeeFailure(message: "Produk tidak memiliki stok"));
         return;
       }
 
-      final List<StokShopee> stokList = latestProduct.stok.map((s) {
-        return StokShopee(
-          satuan: s.satuan,
-          harga: s.harga,
-          stokQty: s.stokQty,
-          idProductShopee: s.idProductShopee, // ✅ ambil dari LatestProductStok
-        );
-      }).toList();
+// 🔥 Filter hanya stok yang belum punya idProductShopee
+      final List<StokShopee> stokList = latestProduct.stok
+          .where((s) => s.idProductShopee == null)
+          .map((s) => StokShopee(
+                satuan: s.satuan,
+                harga: s.harga,
+                stokQty: s.stokQty,
+                idProductShopee: s.idProductShopee,
+              ))
+          .toList();
+
+      if (stokList.isEmpty) {
+        emit(AddProductShopeeFailure(
+            message: "Semua satuan produk ini sudah diupload ke Shopee"));
+        return;
+      }
 
       final categories = await ShopeeController.getCategories();
       final logistics = await ShopeeController.getLogistics();

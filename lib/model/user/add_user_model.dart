@@ -4,7 +4,9 @@ class AddUser {
   final String name;
   final String role;
   final String noTelp;
-  final String token;
+  final String? alamat;
+  final String? jenisKelamin;
+  final String? token;
 
   AddUser({
     required this.idUser,
@@ -12,18 +14,26 @@ class AddUser {
     required this.name,
     required this.role,
     required this.noTelp,
-    required this.token,
+    this.alamat,
+    this.jenisKelamin,
+    this.token,
   });
 
   factory AddUser.fromJson(Map<String, dynamic> json) {
-    final userData = json['user'] ?? {}; // Hindari error jika null
+    final data = json['user'] ?? json;
+
     return AddUser(
-      idUser: userData['id_user'] ?? 'Unknown',
-      username: userData['username'] ?? 'Unknown',
-      name: userData['name'] ?? 'Unknown',
-      role: userData['role'] ?? 'Unknown',
-      noTelp: userData['no_telp']?.toString() ?? '',
-      token: json['token'] ?? '',
+      idUser: data['id_user'] ?? "",
+      username: data['username'] ?? "",
+      name: data['name'] ?? "",
+      role: data['role'] ?? "",
+      noTelp: data['no_telp']?.toString() ?? "",
+
+      // 🟢 tambahan baru
+      alamat: data['alamat']?.toString(),
+      jenisKelamin: data['jenis_kelamin']?.toString(),
+
+      token: json['token'],
     );
   }
 }

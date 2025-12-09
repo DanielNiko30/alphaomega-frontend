@@ -25,6 +25,7 @@ class TransJualEditBloc extends Bloc<TransJualEditEvent, TransJualEditState> {
     on<FetchAllUsersEdit>(_onFetchAllUsersEdit);
     on<SearchProductByNameEdit>(_onSearchProductByNameEdit);
     on<SubmitEditTransaction>(_onSubmitEditTransaction);
+    on<UpdateStatusTransaksiEdit>(_onUpdateStatusTransaksiEdit);
   }
 
   /// Load transaksi untuk prefill halaman edit
@@ -295,6 +296,29 @@ class TransJualEditBloc extends Bloc<TransJualEditEvent, TransJualEditState> {
       } catch (e) {
         emit(TransJualEditError("Gagal fetch user: $e"));
       }
+    }
+  }
+
+  Future<void> _onUpdateStatusTransaksiEdit(
+    UpdateStatusTransaksiEdit event,
+    Emitter<TransJualEditState> emit,
+  ) async {
+    emit(TransJualEditStatusUpdating());
+
+    try {
+      final response = await TransaksiJualController.updateStatusTransaction(
+          event.idHtransJual);
+
+      if (response.statusCode == 200) {
+        emit(TransJualEditStatusUpdated(
+            "Status transaksi berhasil diubah menjadi Lunas"));
+      } else {
+        emit(TransJualEditStatusError(
+          "Gagal update status: ${response.statusMessage}",
+        ));
+      }
+    } catch (e) {
+      emit(TransJualEditStatusError("Error: $e"));
     }
   }
 

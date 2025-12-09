@@ -102,3 +102,15 @@ class TransJualEditLoaded extends TransJualEditState {
 
 /// State sukses setelah submit
 class TransJualEditSuccess extends TransJualEditState {}
+
+class TransJualEditStatusUpdating extends TransJualEditState {}
+
+class TransJualEditStatusUpdated extends TransJualEditState {
+  final String message;
+  TransJualEditStatusUpdated(this.message);
+}
+
+class TransJualEditStatusError extends TransJualEditState {
+  final String message;
+  TransJualEditStatusError(this.message);
+}

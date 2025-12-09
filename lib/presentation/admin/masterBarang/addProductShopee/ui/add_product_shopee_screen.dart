@@ -188,18 +188,37 @@ class _AddProductShopeeScreenState extends State<AddProductShopeeScreen> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 700),
         child: BlocConsumer<AddProductShopeeBloc, AddProductShopeeState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is AddProductShopeeSuccess) {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: Colors.green),
+              await showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text("Sukses"),
+                  content: Text(state.message),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // tutup popup
+                        Navigator.of(context).pop(); // tutup dialog
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
               );
             } else if (state is AddProductShopeeFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(state.message), backgroundColor: Colors.red),
+              await showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text("Terjadi Kesalahan"),
+                  content: Text(state.message),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
               );
             }
           },
@@ -243,29 +262,50 @@ class _AddProductShopeeScreenState extends State<AddProductShopeeScreen> {
 
                           // === Section: Data Produk ===
                           _sectionCard("Data Produk", [
-                            DropdownButtonFormField<StokShopee>(
-                              value: state.selectedSatuan,
-                              decoration: const InputDecoration(
-                                labelText: "Pilih Satuan Produk",
-                                border: OutlineInputBorder(),
-                              ),
-                              items: state.stokList
-                                  .map((stok) => DropdownMenuItem(
-                                        value: stok,
-                                        child: Text(
-                                            "${stok.satuan} - ${_currencyFormatter.format(stok.harga)}"),
-                                      ))
-                                  .toList(),
-                              onChanged: (val) => context
-                                  .read<AddProductShopeeBloc>()
-                                  .add(
-                                      SelectSatuanShopee(selectedSatuan: val!)),
-                              validator: (val) =>
-                                  val == null ? "Satuan harus dipilih" : null,
-                            ),
-                            const SizedBox(height: 16),
+                            Builder(builder: (context) {
+                              final availableSatuan =
+                                  state.stokList.where((stok) {
+                                final idShopee =
+                                    stok.idProductShopee?.toString().trim();
+                                if (idShopee == null) return true;
+                                return idShopee.isEmpty ||
+                                    idShopee == "0" ||
+                                    idShopee == "null";
+                              }).toList();
 
-                            // Kategori Shopee - dengan border lebih jelas
+                              return DropdownButtonFormField<StokShopee>(
+                                value: availableSatuan
+                                        .contains(state.selectedSatuan)
+                                    ? state.selectedSatuan
+                                    : null,
+                                decoration: const InputDecoration(
+                                  labelText: "Pilih Satuan Produk",
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: availableSatuan.map((stok) {
+                                  return DropdownMenuItem(
+                                    value: stok,
+                                    child: Text(
+                                      "${stok.satuan} - ${_currencyFormatter.format(stok.harga)}",
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (val) => context
+                                    .read<AddProductShopeeBloc>()
+                                    .add(SelectSatuanShopee(
+                                        selectedSatuan: val!)),
+                                validator: (val) {
+                                  if (availableSatuan.isEmpty) {
+                                    return "Semua satuan sudah terhubung ke Shopee";
+                                  }
+                                  if (val == null)
+                                    return "Satuan harus dipilih";
+                                  return null;
+                                },
+                              );
+                            }),
+                            const SizedBox(height: 16),
                             InkWell(
                               onTap: () => _showCategoryPicker(
                                   state.categories, _selectedCategoryId),
@@ -293,9 +333,13 @@ class _AddProductShopeeScreenState extends State<AddProductShopeeScreen> {
                                       child: Text(
                                         _selectedCategoryId != null
                                             ? state.categories
-                                                .firstWhere((cat) =>
-                                                    cat.categoryId ==
-                                                    _selectedCategoryId)
+                                                .firstWhere(
+                                                  (cat) =>
+                                                      cat.categoryId ==
+                                                      _selectedCategoryId,
+                                                  orElse: () =>
+                                                      state.categories.first,
+                                                )
                                                 .categoryName
                                             : "Pilih Kategori Shopee",
                                         style: TextStyle(
@@ -314,7 +358,6 @@ class _AddProductShopeeScreenState extends State<AddProductShopeeScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-
                             DropdownButtonFormField<int>(
                               value: _selectedLogisticId,
                               decoration: const InputDecoration(
@@ -334,8 +377,6 @@ class _AddProductShopeeScreenState extends State<AddProductShopeeScreen> {
                                   val == null ? "Logistic harus dipilih" : null,
                             ),
                           ]),
-
-                          // === Section: Detail Barang ===
                           _sectionCard("Detail Barang", [
                             TextFormField(
                               controller: _itemSkuController,
@@ -429,8 +470,6 @@ class _AddProductShopeeScreenState extends State<AddProductShopeeScreen> {
                       ),
                     ),
                   ),
-
-                  // === Floating Submit Button ===
                   Positioned(
                     bottom: 10,
                     right: 20,

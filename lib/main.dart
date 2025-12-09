@@ -107,7 +107,7 @@ void main() async {
       },
     );
   });
-  
+
   runApp(
     MultiBlocProvider(
       providers: [
@@ -136,7 +136,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return OverlaySupport.global(
       child: MaterialApp(
-        title: 'Flutter Demo',
+        title: 'AlphaOmega',
         navigatorKey: navigatorKey,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -145,7 +145,10 @@ class MyApp extends StatelessWidget {
         routes: {
           '/login': (context) => const LoginScreen(),
           '/chooseRole': (context) => const ChooseRoleScreen(),
-          '/listPesanan': (context) => const ListBarangPesananScreen(),
+          "/listPesanan": (context) => BlocProvider(
+                create: (_) => TransJualPendingBloc(),
+                child: const ListBarangPesananScreen(),
+              ),
           '/dashboard': (context) => const DashboardScreen(),
           '/masterUser': (context) => const MasterUserScreen(),
           '/masterBarang': (context) => BlocProvider(
@@ -210,21 +213,28 @@ class MyApp extends StatelessWidget {
             );
           },
           '/detailPesanan': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments as Map?;
-            final idPesanan = args?['idPesanan'] as String?;
-            final namaPembeli = args?['namaPembeli'] as String?;
+            final routeArgs = ModalRoute.of(context)?.settings.arguments;
 
-            if (idPesanan == null) {
+            String? idPesanan;
+            String? namaPembeli;
+
+            if (routeArgs != null && routeArgs is Map<String, dynamic>) {
+              idPesanan = routeArgs['idPesanan'] as String?;
+              namaPembeli = routeArgs['namaPembeli'] as String?;
+            }
+
+            if (idPesanan == null || idPesanan.isEmpty) {
               return Scaffold(
                 appBar: AppBar(title: const Text("Detail Pesanan")),
                 body: const Center(
-                    child: Text("Error: ID Pesanan tidak ditemukan")),
+                  child: Text("Error: ID Pesanan tidak ditemukan"),
+                ),
               );
             }
 
             return BlocProvider(
-              create: (context) =>
-                  DetailPesananBloc()..add(LoadDetailPesanan(idPesanan)),
+              create: (context) => DetailPesananBloc(idPesanan: idPesanan!)
+                ..add(LoadDetailPesanan(idPesanan!)),
               child: DetailPesananScreen(
                 idPesanan: idPesanan,
                 namaPembeli: namaPembeli ?? "",

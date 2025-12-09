@@ -314,4 +314,24 @@ class ProductController {
       throw Exception("Terjadi kesalahan saat memuat produk dengan stok: $e");
     }
   }
+
+  static Future<bool> deleteKategori(String idKategori) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/kategori/$idKategori'),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else if (response.statusCode == 404) {
+        throw Exception("Kategori tidak ditemukan");
+      } else {
+        final data = jsonDecode(response.body);
+        throw Exception(data["message"] ?? "Gagal menghapus kategori");
+      }
+    } catch (e) {
+      throw Exception("Terjadi kesalahan saat menghapus kategori: $e");
+    }
+  }
 }

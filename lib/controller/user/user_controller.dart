@@ -25,6 +25,8 @@ class UserController {
     required String password,
     required String role,
     required String noTelp,
+    required String alamat,
+    required String jenisKelamin,
   }) async {
     try {
       final response = await http.put(
@@ -36,6 +38,8 @@ class UserController {
           'password': password,
           'role': role,
           'no_telp': noTelp,
+          'alamat': alamat,
+          'jenis_kelamin': jenisKelamin,
         }),
       );
 
@@ -58,6 +62,8 @@ class UserController {
     required String password,
     required String role,
     required String noTelp,
+    required String alamat,
+    required String jenisKelamin,
   }) async {
     try {
       final response = await http.post(
@@ -69,6 +75,8 @@ class UserController {
           'password': password,
           'role': role,
           'no_telp': noTelp,
+          'alamat': alamat,
+          'jenis_kelamin': jenisKelamin,
         }),
       );
 
@@ -79,6 +87,26 @@ class UserController {
       print('Error creating user: $e');
     }
     return null;
+  }
+
+  Future<bool> deleteUser(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/$id'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ User deleted (set aktif = false)");
+        return true;
+      } else {
+        print("❌ Failed to delete user: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("Error deleting user: $e");
+      return false;
+    }
   }
 
   Future<bool> updateUserRole({

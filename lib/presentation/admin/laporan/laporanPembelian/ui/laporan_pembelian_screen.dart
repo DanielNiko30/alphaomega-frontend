@@ -195,10 +195,16 @@ class _LaporanPembelianScreenState extends State<LaporanPembelianScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.search),
-                label: const Text('Tampilkan Laporan'),
+                icon: const Icon(Icons.search,
+                    color: Colors.white), // ikon juga putih
+                label: const Text(
+                  'Tampilkan Laporan',
+                  style: TextStyle(color: Colors.white), // teks putih
+                ),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple),
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white, // default teks dan ikon putih
+                ),
                 onPressed: _loadReport,
               ),
             ),

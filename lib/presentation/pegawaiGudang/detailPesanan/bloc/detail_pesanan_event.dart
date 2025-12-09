@@ -34,3 +34,30 @@ class RefreshDetailPesanan extends DetailPesananEvent {
   @override
   List<Object?> get props => [idPesanan];
 }
+
+/// 🔹 Event baru dari Socket.IO: transaksi baru
+class NewTransactionReceived extends DetailPesananEvent {
+  final Map<String, dynamic> data;
+  const NewTransactionReceived(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}
+
+/// 🔹 Event update transaksi dari Socket.IO
+class UpdateTransactionReceived extends DetailPesananEvent {
+  final Map<String, dynamic> data;
+  const UpdateTransactionReceived(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}
+
+/// 🔹 Event update status transaksi dari Socket.IO
+class UpdateStatusTransactionReceived extends DetailPesananEvent {
+  final Map<String, dynamic> data;
+  const UpdateStatusTransactionReceived(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}

@@ -17,9 +17,13 @@ class MasterUserScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 700;
 
-    return BlocProvider(
-      create: (context) =>
-          MasterUserBloc(UserController())..add(LoadMasterUsers()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) =>
+              MasterUserBloc(UserController())..add(LoadMasterUsers()),
+        ),
+      ],
       child: Scaffold(
         backgroundColor: Colors.grey[100],
         body: Stack(
@@ -119,12 +123,35 @@ class MasterUserScreen extends StatelessWidget {
                                 fontWeight: FontWeight.bold),
                           ),
                         ),
+
+                        // === Tambahan Gender ===
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            "Gender",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+
+                        // === Tambahan Alamat ===
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            "Alamat",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+
                         SizedBox(width: 50),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 6), // 🔹 jarak lebih rapat
+                  const SizedBox(height: 6),
 
                   const Expanded(child: MasterUserTable()),
                 ],
@@ -221,6 +248,25 @@ class _MasterUserTableState extends State<MasterUserTable> {
                           style: const TextStyle(color: Colors.black87),
                         ),
                       ),
+
+                      // === Gender ===
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          user.jenisKelamin ?? "-",
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                      ),
+
+                      // === Alamat ===
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          user.alamat ?? "-",
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                      ),
+
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -252,7 +298,111 @@ class _MasterUserTableState extends State<MasterUserTable> {
                             icon: const Icon(Icons.more_vert),
                             onSelected: (value) {
                               if (value == 'delete') {
-                                // TODO: handle delete
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return Dialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 380),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(18),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.warning_amber_rounded,
+                                                color: Colors.red,
+                                                size: 48,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              const Text(
+                                                "Hapus User",
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                "Yakin ingin menghapus \"${user.name}\"?",
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                    fontSize: 14),
+                                              ),
+                                              const SizedBox(height: 22),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: ElevatedButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                              context),
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.grey[300],
+                                                        foregroundColor:
+                                                            Colors.black87,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 10),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      child:
+                                                          const Text("Batal"),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: ElevatedButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                        context
+                                                            .read<
+                                                                MasterUserBloc>()
+                                                            .add(DeleteUserEvent(
+                                                                user.idUser));
+                                                      },
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 10),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
+                                                      child:
+                                                          const Text("Hapus"),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
                               }
                             },
                             itemBuilder: (context) => const [

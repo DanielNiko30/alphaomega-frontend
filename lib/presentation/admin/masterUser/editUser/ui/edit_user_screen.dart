@@ -22,6 +22,10 @@ class _EditUserState extends State<EditUser> {
   final TextEditingController roleController = TextEditingController();
   final TextEditingController noTelpController = TextEditingController();
 
+  // 🔹 Field baru
+  final TextEditingController alamatController = TextEditingController();
+  final TextEditingController jenisKelaminController = TextEditingController();
+
   bool _obscurePassword = true;
 
   @override
@@ -36,7 +40,6 @@ class _EditUserState extends State<EditUser> {
     final accent = Colors.teal.shade600;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // 🔹 Responsif width untuk popup
     final dialogWidth = screenWidth < 600 ? screenWidth * 0.9 : 600.0;
 
     return AlertDialog(
@@ -58,7 +61,7 @@ class _EditUserState extends State<EditUser> {
         ],
       ),
       content: SizedBox(
-        width: dialogWidth, // ✅ Lebar popup diperbesar
+        width: dialogWidth,
         child: BlocConsumer<EditUserBloc, EditUserState>(
           listener: (context, state) {
             if (state is EditUserSuccess) {
@@ -85,6 +88,10 @@ class _EditUserState extends State<EditUser> {
               passwordController.text = state.password;
               roleController.text = state.role;
               noTelpController.text = state.noTelp;
+
+              // 🔹 Isi field baru
+              alamatController.text = state.alamat;
+              jenisKelaminController.text = state.jenisKelamin;
 
               return Scrollbar(
                 thumbVisibility: true,
@@ -150,6 +157,22 @@ class _EditUserState extends State<EditUser> {
                           icon: Icons.phone_outlined,
                           keyboardType: TextInputType.phone,
                         ),
+
+                        // 🔹 FIELD BARU: ALAMAT
+                        const SizedBox(height: 14),
+                        _buildTextField(
+                          controller: alamatController,
+                          label: "Alamat",
+                          icon: Icons.home_outlined,
+                        ),
+
+                        // 🔹 FIELD BARU: JENIS KELAMIN
+                        const SizedBox(height: 14),
+                        _buildTextField(
+                          controller: jenisKelaminController,
+                          label: "Jenis Kelamin",
+                          icon: Icons.wc_outlined,
+                        ),
                       ],
                     ),
                   ),
@@ -164,9 +187,7 @@ class _EditUserState extends State<EditUser> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.grey[700],
-          ),
+          style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
           child: const Text("Batal"),
         ),
         ElevatedButton.icon(
@@ -189,6 +210,10 @@ class _EditUserState extends State<EditUser> {
                     password: passwordController.text.trim(),
                     role: roleController.text.trim(),
                     noTelp: noTelpController.text.trim(),
+
+                    // 🔹 Tambahan baru
+                    alamat: alamatController.text.trim(),
+                    jenisKelamin: jenisKelaminController.text.trim(),
                   ),
                 );
           },

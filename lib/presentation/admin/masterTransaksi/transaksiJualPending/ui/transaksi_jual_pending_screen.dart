@@ -13,10 +13,25 @@ class TransJualPendingScreen extends StatefulWidget {
 }
 
 class _TransJualPendingScreenState extends State<TransJualPendingScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     context.read<TransJualPendingBloc>().add(FetchTransJualPendingEvent());
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -39,6 +54,29 @@ class _TransJualPendingScreenState extends State<TransJualPendingScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // 🔍 Search Bar
+                  SizedBox(
+                    width: 400,
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: 'Cari berdasarkan nama pembeli...',
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // 📋 Daftar Transaksi
                   Expanded(
                     child: BlocBuilder<TransJualPendingBloc,
                         TransJualPendingState>(
@@ -47,7 +85,13 @@ class _TransJualPendingScreenState extends State<TransJualPendingScreen> {
                           return const Center(
                               child: CircularProgressIndicator());
                         } else if (state is TransJualPendingLoaded) {
-                          if (state.list.isEmpty) {
+                          // Filter berdasarkan nama pembeli
+                          final filteredList = state.list.where((item) {
+                            final nama = item.namaPembeli.toLowerCase();
+                            return nama.contains(_searchQuery);
+                          }).toList();
+
+                          if (filteredList.isEmpty) {
                             return const Center(
                               child: Text(
                                 "Tidak ada transaksi pending.",
@@ -79,46 +123,70 @@ class _TransJualPendingScreenState extends State<TransJualPendingScreen> {
                                       vertical: 14,
                                       horizontal: 16,
                                     ),
-                                    color: Colors.blueGrey[50],
+                                    color: Colors.blue,
                                     child: Row(
                                       children: const [
                                         Expanded(
                                           flex: 1,
-                                          child: Text("No",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            "No",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors
+                                                  .white, // <-- ubah warna text
+                                            ),
+                                          ),
                                         ),
                                         Expanded(
                                           flex: 2,
-                                          child: Text("Nama Pembeli",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            "Nama Pembeli",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                         Expanded(
                                           flex: 2,
-                                          child: Text("Penjual",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            "Penjual",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                         Expanded(
                                           flex: 2,
-                                          child: Text("Pegawai",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            "Pegawai",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                         Expanded(
                                           flex: 2,
-                                          child: Text("Tanggal",
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            "Tanggal",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                         Expanded(
                                           flex: 1,
                                           child: Center(
-                                            child: Text("Aksi",
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold)),
+                                            child: Text(
+                                              "Aksi",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -130,11 +198,11 @@ class _TransJualPendingScreenState extends State<TransJualPendingScreen> {
                                   // List isi tabel
                                   Expanded(
                                     child: ListView.separated(
-                                      itemCount: state.list.length,
+                                      itemCount: filteredList.length,
                                       separatorBuilder: (context, index) =>
                                           const Divider(height: 1),
                                       itemBuilder: (context, index) {
-                                        final item = state.list[index];
+                                        final item = filteredList[index];
                                         final isEven = index % 2 == 0;
 
                                         return Container(

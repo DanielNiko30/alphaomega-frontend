@@ -15,6 +15,8 @@ class TransBeliScreen extends StatefulWidget {
 }
 
 class _TransBeliScreenState extends State<TransBeliScreen> {
+  int currentPageProduct = 1;
+  final int itemsPerPage = 20;
   DateTime? selectedDate;
   Map<String, TextEditingController> qtyControllers = {};
   String? metodePembayaran;
@@ -85,71 +87,191 @@ class _TransBeliScreenState extends State<TransBeliScreen> {
                                   left: 100, top: 25, bottom: 25),
                               child: Column(
                                 children: [
+                                  // ============================
+                                  // SEARCH BAR
+                                  // ============================
                                   TextField(
                                     decoration: const InputDecoration(
                                       hintText: "Cari...",
                                       prefixIcon: Icon(Icons.search),
                                       border: OutlineInputBorder(),
                                     ),
-                                    onChanged: (value) => context
-                                        .read<TransBeliBloc>()
-                                        .add(SearchProductByName(value)),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        currentPageProduct =
+                                            1; // reset page ketika search
+                                      });
+
+                                      context
+                                          .read<TransBeliBloc>()
+                                          .add(SearchProductByName(value));
+                                    },
                                   ),
+
                                   const SizedBox(height: 16),
+
+                                  // ============================
+                                  // GRID PRODUCT + PAGINATION
+                                  // ============================
                                   Expanded(
-                                    child: GridView.builder(
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 4,
-                                        childAspectRatio: 3 / 4,
-                                        crossAxisSpacing: 12,
-                                        mainAxisSpacing: 12,
-                                      ),
-                                      itemCount: state.products.length,
-                                      itemBuilder: (context, index) {
-                                        final product = state.products[index];
-                                        return Card(
-                                          child: InkWell(
-                                            onTap: () {
-                                              context
-                                                  .read<TransBeliBloc>()
-                                                  .add(AddProduct(
-                                                    id: product['id'],
-                                                    name: product['name'],
-                                                    image: product['image'],
-                                                    quantity: 1,
-                                                    unit: '',
-                                                    price: 0.0,
-                                                  ));
-                                            },
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
-                                              children: [
-                                                Expanded(
-                                                  child: SizedBox(
-                                                    width: 120,
-                                                    height: 120,
-                                                    child: buildProductImage(
-                                                        product['image']),
-                                                  ),
+                                    child: Column(
+                                      children: [
+                                        // ============================
+                                        // GRIDVIEW
+                                        // ============================
+                                        Expanded(
+                                          child: Builder(
+                                            builder: (context) {
+                                              final products = state.products;
+
+                                              // Hitung pagination
+                                              final totalItems =
+                                                  products.length;
+                                              final totalPages =
+                                                  (totalItems / itemsPerPage)
+                                                      .ceil()
+                                                      .clamp(1, 9999);
+
+                                              final startIndex =
+                                                  (currentPageProduct - 1) *
+                                                      itemsPerPage;
+                                              final endIndex = (startIndex +
+                                                          itemsPerPage >
+                                                      totalItems)
+                                                  ? totalItems
+                                                  : startIndex + itemsPerPage;
+
+                                              final paginatedProducts =
+                                                  products.sublist(
+                                                      startIndex, endIndex);
+
+                                              return GridView.builder(
+                                                gridDelegate:
+                                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                                  crossAxisCount: 4,
+                                                  childAspectRatio: 3 / 4,
+                                                  crossAxisSpacing: 12,
+                                                  mainAxisSpacing: 12,
                                                 ),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8.0),
-                                                  child: Text(
-                                                    product['name'],
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                    textAlign: TextAlign.center,
-                                                  ),
+                                                itemCount:
+                                                    paginatedProducts.length,
+                                                itemBuilder: (context, index) {
+                                                  final product =
+                                                      paginatedProducts[index];
+                                                  return Card(
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        context
+                                                            .read<
+                                                                TransBeliBloc>()
+                                                            .add(AddProduct(
+                                                              id: product['id'],
+                                                              name: product[
+                                                                  'name'],
+                                                              image: product[
+                                                                  'image'],
+                                                              quantity: 1,
+                                                              unit: '',
+                                                              price: 0.0,
+                                                            ));
+                                                      },
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceEvenly,
+                                                        children: [
+                                                          Expanded(
+                                                            child: SizedBox(
+                                                              width: 120,
+                                                              height: 120,
+                                                              child: buildProductImage(
+                                                                  product[
+                                                                      'image']),
+                                                            ),
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(8.0),
+                                                            child: Text(
+                                                              product['name'],
+                                                              style: const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold),
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        ),
+
+                                        const SizedBox(height: 10),
+
+                                        // ============================
+                                        // PAGINATION BUTTONS
+                                        // ============================
+                                        Builder(
+                                          builder: (context) {
+                                            final totalItems =
+                                                state.products.length;
+                                            final totalPages =
+                                                (totalItems / itemsPerPage)
+                                                    .ceil()
+                                                    .clamp(1, 9999);
+
+                                            return Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                // Prev
+                                                IconButton(
+                                                  icon: const Icon(
+                                                      Icons.chevron_left),
+                                                  onPressed:
+                                                      currentPageProduct > 1
+                                                          ? () {
+                                                              setState(() {
+                                                                currentPageProduct--;
+                                                              });
+                                                            }
+                                                          : null,
+                                                ),
+
+                                                Text(
+                                                  "$currentPageProduct / $totalPages",
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+
+                                                // Next
+                                                IconButton(
+                                                  icon: const Icon(
+                                                      Icons.chevron_right),
+                                                  onPressed:
+                                                      currentPageProduct <
+                                                              totalPages
+                                                          ? () {
+                                                              setState(() {
+                                                                currentPageProduct++;
+                                                              });
+                                                            }
+                                                          : null,
                                                 ),
                                               ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],

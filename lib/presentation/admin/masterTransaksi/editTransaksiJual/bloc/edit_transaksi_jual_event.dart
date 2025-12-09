@@ -143,3 +143,9 @@ class EditTransactionSuccess extends TransJualEditEvent {}
 
 /// Event untuk reset state setelah navigasi
 class ResetEditTransactionState extends TransJualEditEvent {}
+
+class UpdateStatusTransaksiEdit extends TransJualEditEvent {
+  final String idHtransJual;
+
+  UpdateStatusTransaksiEdit(this.idHtransJual);
+}

@@ -19,10 +19,7 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
     try {
       emit(ProductLoading());
 
-      final products = await ProductController.getAllProducts()
-          .timeout(requestTimeout, onTimeout: () {
-        throw Exception("Request timeout saat memuat produk");
-      });
+      final products = await ProductController.getAllProducts();
 
       emit(ProductLoaded(products));
     } catch (e) {
@@ -35,11 +32,7 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
       FetchProductsWithStok event, Emitter<ListProductState> emit) async {
     try {
       emit(ProductLoading());
-
-      final products = await ProductController.getAllProductsWithStok()
-          .timeout(requestTimeout, onTimeout: () {
-        throw Exception("Request timeout saat memuat produk + stok");
-      });
+      final products = await ProductController.getAllProductsWithStok();
 
       if (products.isEmpty) {
         emit(ProductError("Tidak ada produk ditemukan"));
@@ -55,18 +48,10 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
   Future<void> _onKonversiStok(
       KonversiStokEvent event, Emitter<ListProductState> emit) async {
     try {
-      // tunjukkan loading khusus konversi
       emit(KonversiStokLoading());
 
-      final result = await ProductController.konversiStok(event.konversiStok)
-          .timeout(requestTimeout, onTimeout: () {
-        throw Exception("Request timeout saat konversi stok");
-      });
-
-      // beritahu sukses (snackbar akan muncul karena BlocListener)
+      final result = await ProductController.konversiStok(event.konversiStok);
       emit(KonversiStokSuccess(result.message ?? "Konversi stok berhasil"));
-
-      // saat men-refresh, tunjukkan ProductLoading supaya UI jelas sedang refill data
       emit(ProductLoading());
       final products = await ProductController.getAllProductsWithStok()
           .timeout(requestTimeout, onTimeout: () {
@@ -77,7 +62,6 @@ class ListProductBloc extends Bloc<ListProductEvent, ListProductState> {
       emit(ProductWithStokLoaded(products));
     } catch (e) {
       emit(KonversiStokFailed("Konversi stok gagal: ${e.toString()}"));
-      // opsional: setelah gagal kita bisa refresh ulang atau tampilkan error
     }
   }
 }
