@@ -40,28 +40,27 @@
         }
       });
 
-      // 🔔 Event: tampilkan suara custom saat notif muncul
+      // Event saat notif tampil → mainkan suara
       OneSignal.on('notificationDisplay', function (event) {
         console.log('Notifikasi tampil di web:', event);
-        var audio = new Audio('/sounds/cashier.mp3'); // pastikan file ada di web/sounds/
-        audio.play().catch(() => console.log("Autoplay diblokir oleh browser"));
+        var audio = new Audio('/sounds/cashier.mp3');
+        audio.play().catch(() => console.log("Autoplay diblokir"));
       });
 
-      // 📌 Event: klik notifikasi
+      // Event klik notifikasi → arahkan ke halaman Flutter
       OneSignal.on('notificationClick', function (event) {
         console.log('Klik notif:', event);
         if (event.data && event.data.idPesanan) {
-          // arahkan ke halaman Flutter
           window.location.href = '/#detailPesanan?idPesanan=' + event.data.idPesanan;
         }
       });
     });
 
-    // ✅ Registrasi Service Worker (penting untuk PWA & push)
+    // Registrasi Service Worker OneSignal
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('flutter_service_worker.js?v=2913101978')
+      navigator.serviceWorker.register('OneSignalSDKWorker.js')
         .then(function (registration) {
-          console.log('ServiceWorker registered with scope:', registration.scope);
+          console.log('OneSignal SW registered with scope:', registration.scope);
         }).catch(function (err) {
           console.log('ServiceWorker registration failed:', err);
         });
