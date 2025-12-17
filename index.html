@@ -7,26 +7,22 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
-  <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="frontend">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png" />
 
   <title>frontend</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- ✅ OneSignal SDK -->
+  <!-- OneSignal SDK -->
   <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
 </head>
 
 <body>
   <script src="flutter_bootstrap.js" async></script>
 
-  <!-- ✅ Inisialisasi OneSignal Web Push -->
   <script>
     window.OneSignal = window.OneSignal || [];
     OneSignal.push(function () {
@@ -40,14 +36,31 @@
         }
       });
 
-      // Event saat notif tampil → mainkan suara
+      // Notifikasi tampil → kirim ke Flutter dan mainkan audio
       OneSignal.on('notificationDisplay', function (event) {
         console.log('Notifikasi tampil di web:', event);
-        var audio = new Audio('/sounds/cashier.mp3');
+
+        // Kirim data ke Flutter via postMessage
+        window.postMessage({
+          type: 'onesignal-notification',
+          title: event.heading,
+          body: event.content,
+          data: event.data
+        }, '*');
+
+        // Popup fallback web (optional)
+        const div = document.createElement('div');
+        div.innerText = (event.heading || "Notifikasi") + " - " + (event.content || "");
+        div.style = "position:fixed;bottom:20px;right:20px;background:#0175C2;color:white;padding:10px;border-radius:5px;box-shadow:0 0 10px rgba(0,0,0,0.3);";
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 5000);
+
+        // Audio
+        var audio = new Audio('assets/sounds/cashier.mp3');
         audio.play().catch(() => console.log("Autoplay diblokir"));
       });
 
-      // Event klik notifikasi → arahkan ke halaman Flutter
+      // Notifikasi diklik
       OneSignal.on('notificationClick', function (event) {
         console.log('Klik notif:', event);
         if (event.data && event.data.idPesanan) {
@@ -56,14 +69,11 @@
       });
     });
 
-    // Registrasi Service Worker OneSignal
+    // Registrasi Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('OneSignalSDKWorker.js')
-        .then(function (registration) {
-          console.log('OneSignal SW registered with scope:', registration.scope);
-        }).catch(function (err) {
-          console.log('ServiceWorker registration failed:', err);
-        });
+        .then(reg => console.log('SW registered with scope:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
     }
   </script>
 </body>
